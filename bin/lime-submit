@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+set -e
+DD=False
+PRE_DD=()
+POST_DD=()
+for ARG in "$@"; do
+  shift
+  if [[ $ARG == "--" ]]; then
+    DD=True
+    POST_DD=( "$@" )
+    break
+  fi
+  PRE_DD+=("$ARG")
+done
+
+if [[ $DD == True ]]; then
+  SPARK_ARGS=("${PRE_DD[@]}")
+  LIME_ARGS=("${POST_DD[@]}")
+else
+  SPARK_ARGS=()
+  LIME_ARGS=("${PRE_DD[@]}")
+fi
+
+# Figure out where LIME is installed
+SCRIPT_DIR="$(cd `dirname $0`/..; pwd)"
+
+# Find LIME cli assembly jar
+LIME_CLI_JAR=
+if [ -d "$SCRIPT_DIR/repo" ]; then
+  ASSEMBLY_DIR="$SCRIPT_DIR/repo"
+else
+  ASSEMBLY_DIR="$SCRIPT_DIR/lime-cli/target"
+fi
+
+num_jars="$(ls -1 "$ASSEMBLY_DIR" | grep "^lime-cli-[0-9A-Za-z\.-]*\.jar$" | grep -v javadoc | wc -l)"
+if [ "$num_jars" -eq "0" ]; then
+  echo "Failed to find LIME cli assembly in $ASSEMBLY_DIR." 1>&2
+  echo "You need to build LIME before running this program." 1>&2
+  exit 1
+fi
+
+ASSEMBLY_JARS="$(ls -1 "$ASSEMBLY_DIR" | grep "^lime-cli-[0-9A-Za-z\.-]*\.jar$" | grep -v javadoc || true)"
+if [ "$num_jars" -gt "1" ]; then
+  echo "Found multiple LIME cli assembly jars in $ASSEMBLY_DIR:" 1>&2
+  echo "$ASSEMBLY_JARS" 1>&2
+  echo "Please remove all but one jar." 1>&2
+  exit 1
+fi
+
+LIME_CLI_JAR="${ASSEMBLY_DIR}/${ASSEMBLY_JARS}"
+LIME_MAIN="org.bdgenomics.lime.cli.LimeMain"
+
+# Find spark-submit script
+if [ -z "$SPARK_HOME" ]; then
+  SPARK_SUBMIT=$(which spark-submit || echo)
+else
+  SPARK_SUBMIT="$SPARK_HOME"/bin/spark-submit
+fi
+
+if [ -z "$SPARK_SUBMIT" ]; then
+  echo "SPARK_HOME not set and spark-submit not on PATH; Aborting."
+  exit 1
+fi
+echo "Using SPARK_SUBMIT=$SPARK_SUBMIT"
+
+# submit the job to Spark
+"$SPARK_SUBMIT" \
+  --class $LIME_MAIN \
+  --conf spark.serializer=org.apache.spark.serializer.KryoSerializer \
+  --conf spark.kryo.registrator=org.bdgenomics.lime.serialization.LimeKryoRegistrator \
+  "${SPARK_ARGS[@]}" \
+  "$LIME_CLI_JAR" \
+  "${LIME_ARGS[@]}"
