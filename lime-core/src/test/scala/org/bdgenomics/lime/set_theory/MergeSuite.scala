@@ -13,5 +13,4 @@ class MergeSuite extends LimeFunSuite {
     val x = DistributedMerge(genomicRdd.flattenRddByRegions, genomicRdd.partitionMap.get).compute()
   }
 
-
 }

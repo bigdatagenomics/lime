@@ -7,9 +7,9 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
-abstract class SetTheory[T: ClassTag] extends Serializable {
+abstract class SetTheory extends Serializable {
   val partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]]
-  val distanceThreshold: Long
+  val threshold: Long
 
   def primitive(firstRegion: ReferenceRegion,
                 secondRegion: ReferenceRegion,
@@ -21,19 +21,19 @@ abstract class SetTheory[T: ClassTag] extends Serializable {
 
 }
 
-abstract class SetTheoryBetweenCollections[T: ClassTag, U: ClassTag, RT, RU] extends SetTheory[T] {
+abstract class SetTheoryBetweenCollections[T: ClassTag, U: ClassTag, RT, RU] extends SetTheory {
   val leftRdd: RDD[(ReferenceRegion, T)]
   val rightRdd: RDD[(ReferenceRegion, U)]
 
   def compute(): RDD[(ReferenceRegion, (RT, RU))]
 }
 
-abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory[T] {
+abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
   val rddToCompute: RDD[(ReferenceRegion, T)]
 
   def compute(): RDD[(ReferenceRegion, Iterable[T])] = {
-    val localComputed = localCompute(rddToCompute.map(f => (f._1, Iterable(f._2))), distanceThreshold)
-    externalCompute(localComputed, partitionMap, distanceThreshold, 2)
+    val localComputed = localCompute(rddToCompute.map(f => (f._1, Iterable(f._2))), threshold)
+    externalCompute(localComputed, partitionMap, threshold, 2)
   }
 
   protected def localCompute(rdd: RDD[(ReferenceRegion, Iterable[T])], distanceThreshold: Long): RDD[(ReferenceRegion, Iterable[T])] = {
@@ -64,24 +64,24 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory[T] {
   }
 
   /**
-    * Computes the primitives between partitions.
-    *
-    * @param rdd The rdd to compute on.
-    * @param partitionMap The current partition map for rdd.
-    * @param distanceThreshold The distance threshold for the condition and primitive.
-    * @param round The current round of computation in the recursion tree. Increments by a factor of 2 each round.
-    * @return The computed rdd for this round.
-    */
+   * Computes the primitives between partitions.
+   *
+   * @param rdd The rdd to compute on.
+   * @param partitionMap The current partition map for rdd.
+   * @param distanceThreshold The distance threshold for the condition and primitive.
+   * @param round The current round of computation in the recursion tree. Increments by a factor of 2 each round.
+   * @return The computed rdd for this round.
+   */
   @tailrec private def externalCompute(rdd: RDD[(ReferenceRegion, Iterable[T])],
-                                partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                distanceThreshold: Long,
-                                round: Int): RDD[(ReferenceRegion, Iterable[T])] = {
+                                       partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
+                                       distanceThreshold: Long,
+                                       round: Int): RDD[(ReferenceRegion, Iterable[T])] = {
 
     if (round > partitionMap.length) {
       return rdd
     }
 
-    lazy val partitionedRdd = rdd.mapPartitionsWithIndex((idx, iter) => {
+    val partitionedRdd = rdd.mapPartitionsWithIndex((idx, iter) => {
       val indexWithinParent = idx % round
       val partnerPartition = {
         var i = 1
@@ -111,20 +111,19 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory[T] {
     }).repartitionAndSortWithinPartitions(new ReferenceRegionRangePartitioner(partitionMap.length))
       .map(f => (f._1._1, f._2))
 
-
-    lazy val newPartitionMap = partitionedRdd.mapPartitions(iter => {
-                                 getRegionBoundsFromPartition(iter)
-                               }).collect
+    val newPartitionMap = partitionedRdd.mapPartitions(iter => {
+      getRegionBoundsFromPartition(iter)
+    }).collect
 
     externalCompute(localCompute(partitionedRdd, distanceThreshold), newPartitionMap, distanceThreshold, round * 2)
   }
 
   /**
-    * Gets the partition bounds from a ReferenceRegion keyed Iterator
-    *
-    * @param iter The data on a given partition. ReferenceRegion keyed
-    * @return The bounds of the ReferenceRegions on that partition, in an Iterator
-    */
+   * Gets the partition bounds from a ReferenceRegion keyed Iterator
+   *
+   * @param iter The data on a given partition. ReferenceRegion keyed
+   * @return The bounds of the ReferenceRegions on that partition, in an Iterator
+   */
   private def getRegionBoundsFromPartition(iter: Iterator[(ReferenceRegion, Iterable[T])]): Iterator[Option[(ReferenceRegion, ReferenceRegion)]] = {
     if (iter.isEmpty) {
       // This means that there is no data on the partition, so we have no bounds

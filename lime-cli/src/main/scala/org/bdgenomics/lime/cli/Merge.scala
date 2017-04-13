@@ -36,6 +36,7 @@ object Merge extends BDGCommandCompanion {
       DistributedMerge(genomicRdd.flattenRddByRegions(),
         genomicRdd.partitionMap.get)
         .compute()
+        .collect.foreach(println)
     }
   }
 

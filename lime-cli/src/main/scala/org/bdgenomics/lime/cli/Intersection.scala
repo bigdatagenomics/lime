@@ -3,6 +3,7 @@ package org.bdgenomics.lime.cli
 import org.apache.spark.SparkContext
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
+import org.bdgenomics.lime.set_theory.DistributedIntersection
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 
@@ -39,8 +40,6 @@ object Intersection extends BDGCommandCompanion {
       val leftGenomicRDD = sc.loadBed(args.leftInput)
       val rightGenomicRDD = sc.loadBed(args.rightInput)
 
-      leftGenomicRDD.shuffleRegionJoin(rightGenomicRDD)
-      leftGenomicRDD.rdd.collect.foreach(println)
     }
   }
 }
