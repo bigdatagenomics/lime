@@ -3,14 +3,10 @@ package org.bdgenomics.lime.cli
 import org.apache.spark.SparkContext
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
-import org.bdgenomics.adam.rdd.feature.FeatureRDD
 import org.bdgenomics.lime.set_theory.DistributedMerge
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 
-/**
- * Created by DevinPetersohn on 4/6/17.
- */
 object Merge extends BDGCommandCompanion {
   val commandName = "merge"
   val commandDescription = "Merges the regions in a file."
@@ -40,8 +36,7 @@ object Merge extends BDGCommandCompanion {
       DistributedMerge(genomicRdd.flattenRddByRegions(),
         genomicRdd.partitionMap.get)
         .compute()
-        .collect
-        .foreach(println)
+        .collect.foreach(println)
     }
   }
 

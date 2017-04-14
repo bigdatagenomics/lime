@@ -8,10 +8,9 @@ import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.lime.LimeFunSuite
 
 class MergeSuite extends LimeFunSuite {
-  sparkTest("test local merge") {
-    val genomicRdd = sc.loadBed(resourcesFile("/cpg.bed")).repartitionAndSort()
-
+  sparkTest("test local merge when all data merges to a single region") {
+    val genomicRdd = sc.loadBed(resourcesFile("/cpg_20merge.bed")).repartitionAndSort()
     val x = DistributedMerge(genomicRdd.flattenRddByRegions, genomicRdd.partitionMap.get).compute()
-    x.collect.foreach(println)
   }
+
 }
