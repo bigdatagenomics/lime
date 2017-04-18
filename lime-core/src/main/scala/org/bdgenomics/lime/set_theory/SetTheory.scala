@@ -191,9 +191,18 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
 
   protected val rddToCompute: RDD[(ReferenceRegion, T)]
 
+  /**
+   * Post process the results based on each Set Theory primitive.
+   *
+   * @param rdd The RDD after computation is complete.
+   * @return The RDD after post-processing.
+   */
+  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[T])]): RDD[(ReferenceRegion, Iterable[T])]
+
   def compute(): RDD[(ReferenceRegion, Iterable[T])] = {
     val localComputed = localCompute(rddToCompute.map(f => (f._1, Iterable(f._2))), threshold)
-    externalCompute(localComputed, partitionMap, threshold, 2)
+    val finalComputed = interNodeCompute(localComputed, partitionMap, threshold, 2)
+    postProcess(finalComputed)
   }
 
   private def localCompute(rdd: RDD[(ReferenceRegion, Iterable[T])], distanceThreshold: Long): RDD[(ReferenceRegion, Iterable[T])] = {
@@ -232,10 +241,10 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
    * @param round The current round of computation in the recursion tree. Increments by a factor of 2 each round.
    * @return The computed rdd for this round.
    */
-  @tailrec private def externalCompute(rdd: RDD[(ReferenceRegion, Iterable[T])],
-                                       partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                       distanceThreshold: Long,
-                                       round: Int): RDD[(ReferenceRegion, Iterable[T])] = {
+  @tailrec private def interNodeCompute(rdd: RDD[(ReferenceRegion, Iterable[T])],
+                                        partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
+                                        distanceThreshold: Long,
+                                        round: Int): RDD[(ReferenceRegion, Iterable[T])] = {
 
     if (round > partitionMap.length) {
       return rdd
@@ -277,6 +286,6 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
       getRegionBoundsFromPartition(iter)
     }).collect
 
-    externalCompute(localCompute(partitionedRdd, distanceThreshold), newPartitionMap, distanceThreshold, round * 2)
+    interNodeCompute(localCompute(partitionedRdd, distanceThreshold), newPartitionMap, distanceThreshold, round * 2)
   }
 }
