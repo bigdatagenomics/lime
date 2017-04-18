@@ -18,6 +18,17 @@ sealed abstract class Merge[T: ClassTag] extends SetTheoryWithSingleCollection[T
 
     firstRegion.overlaps(secondRegion, distanceThreshold)
   }
+
+  /**
+   * Post processing in Merge does nothing, as the key already represents
+   * the value.
+   *
+   * @param rdd The RDD after computation is complete.
+   * @return The RDD after post-processing.
+   */
+  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[T])]): RDD[(ReferenceRegion, Iterable[T])] = {
+    rdd
+  }
 }
 
 case class DistributedMerge[T: ClassTag](@transient rddToCompute: RDD[(ReferenceRegion, T)],
