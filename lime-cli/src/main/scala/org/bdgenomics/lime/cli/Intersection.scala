@@ -37,9 +37,13 @@ object Intersection extends BDGCommandCompanion {
     val companion = Intersection
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.leftInput)
-      val rightGenomicRDD = sc.loadBed(args.rightInput)
+      val leftGenomicRDD = sc.loadBed(args.leftInput).repartitionAndSort()
+      val rightGenomicRDD = sc.loadBed(args.rightInput).copartitionByReferenceRegion(leftGenomicRDD)
 
+      DistributedIntersection(leftGenomicRDD.flattenRddByRegions, rightGenomicRDD.flattenRddByRegions, leftGenomicRDD.partitionMap.get)
+        .compute()
+        .collect()
+        .foreach(println)
     }
   }
 }
