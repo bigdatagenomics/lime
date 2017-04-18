@@ -271,6 +271,8 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
     }).repartitionAndSortWithinPartitions(new ReferenceRegionRangePartitioner(partitionMap.length))
       .map(f => (f._1._1, f._2))
 
+    partitionedRdd.cache()
+
     val newPartitionMap = partitionedRdd.mapPartitions(iter => {
       getRegionBoundsFromPartition(iter)
     }).collect
