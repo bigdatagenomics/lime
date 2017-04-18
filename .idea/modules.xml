@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/lime-cli/lime-cli.iml" filepath="$PROJECT_DIR$/lime-cli/lime-cli.iml" />
+      <module fileurl="file://$PROJECT_DIR$/lime-core/lime-core.iml" filepath="$PROJECT_DIR$/lime-core/lime-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/lime-parent.iml" filepath="$PROJECT_DIR$/lime-parent.iml" />
+    </modules>
+  </component>
+</project>

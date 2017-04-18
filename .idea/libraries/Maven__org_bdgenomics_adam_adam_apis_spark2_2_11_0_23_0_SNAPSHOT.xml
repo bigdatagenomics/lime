@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.bdgenomics.adam:adam-apis-spark2_2.11:0.23.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bdgenomics/adam/adam-apis-spark2_2.11/0.23.0-SNAPSHOT/adam-apis-spark2_2.11-0.23.0-20170417.141232-35.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bdgenomics/adam/adam-apis-spark2_2.11/0.23.0-SNAPSHOT/adam-apis-spark2_2.11-0.23.0-20170417.141232-35-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bdgenomics/adam/adam-apis-spark2_2.11/0.23.0-SNAPSHOT/adam-apis-spark2_2.11-0.23.0-20170417.141232-35-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
