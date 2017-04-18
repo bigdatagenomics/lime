@@ -20,6 +20,6 @@ sealed abstract class Merge[T: ClassTag] extends SetTheoryWithSingleCollection[T
   }
 }
 
-case class DistributedMerge[T: ClassTag](rddToCompute: RDD[(ReferenceRegion, T)],
-                                         partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                         threshold: Long = 0L) extends Merge[T]
+case class DistributedMerge[T: ClassTag](@transient rddToCompute: RDD[(ReferenceRegion, T)],
+                                         @transient partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
+                                         @transient threshold: Long = 0L) extends Merge[T]
