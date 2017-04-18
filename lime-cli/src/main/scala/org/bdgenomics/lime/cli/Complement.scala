@@ -14,7 +14,7 @@ object Complement extends BDGCommandCompanion {
     new Complement(Args4j[ComplementArgs](cmdLine))
   }
 
-  class ComplementArgs extends Args4jBase with ADAMSaveAnyArgs with ParquetArgs{
+  class ComplementArgs extends Args4jBase with ADAMSaveAnyArgs with ParquetArgs {
     @Argument(required = true,
       metaVar = "INPUT1",
       usage = "The input file to compare against the genome",
