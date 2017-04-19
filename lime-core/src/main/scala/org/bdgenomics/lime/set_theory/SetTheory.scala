@@ -197,35 +197,27 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
    * @param rdd The RDD after computation is complete.
    * @return The RDD after post-processing.
    */
-  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[T])]): RDD[(ReferenceRegion, Iterable[T])]
+  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])]): RDD[(ReferenceRegion, Iterable[T])]
 
   def compute(): RDD[(ReferenceRegion, Iterable[T])] = {
-    val localComputed = localCompute(rddToCompute.map(f => (f._1, Iterable(f._2))), threshold)
+    val localComputed = localCompute(rddToCompute.map(f => (f._1, Iterable((f._1, f._2)))), threshold)
     val finalComputed = interNodeCompute(localComputed, partitionMap, threshold, 2)
     postProcess(finalComputed)
   }
 
-  private def localCompute(rdd: RDD[(ReferenceRegion, Iterable[T])], distanceThreshold: Long): RDD[(ReferenceRegion, Iterable[T])] = {
+  private def localCompute(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])],
+                           distanceThreshold: Long): RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])] = {
+
     rdd.mapPartitions(iter => {
       if (iter.hasNext) {
-        val currTuple = iter.next()
-        var currRegion = currTuple._1
-        val tempRegionListBuffer = ListBuffer[(ReferenceRegion, Iterable[T])]()
-        val tempValueListBuffer = ListBuffer[T]()
-        tempValueListBuffer ++= currTuple._2
-        while (iter.hasNext) {
-          val tempTuple = iter.next()
-          val tempRegion = tempTuple._1
-          if (condition(currRegion, tempRegion, distanceThreshold)) {
-            currRegion = primitive(currRegion, tempRegion, distanceThreshold)
-            tempValueListBuffer ++= currTuple._2
+        iter.foldLeft(List(iter.next()))((b, a) => {
+          if (condition(b.head._1, a._1)) {
+            val t = b.head
+            b.drop(1).+:((primitive(t._1, a._1), t._2 ++ a._2))
           } else {
-            tempRegionListBuffer += ((currRegion, tempValueListBuffer.toIterable))
-            currRegion = tempRegion
+            b.+:(a)
           }
-        }
-        tempRegionListBuffer += ((currRegion, tempValueListBuffer.toIterable))
-        tempRegionListBuffer.iterator
+        }).toIterator
       } else {
         Iterator()
       }
@@ -241,10 +233,10 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
    * @param round The current round of computation in the recursion tree. Increments by a factor of 2 each round.
    * @return The computed rdd for this round.
    */
-  @tailrec private def interNodeCompute(rdd: RDD[(ReferenceRegion, Iterable[T])],
+  @tailrec private def interNodeCompute(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])],
                                         partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
                                         distanceThreshold: Long,
-                                        round: Int): RDD[(ReferenceRegion, Iterable[T])] = {
+                                        round: Int): RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])] = {
 
     if (round > partitionMap.length) {
       return rdd

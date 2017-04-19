@@ -8,35 +8,35 @@ import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 
 object Cluster extends BDGCommandCompanion {
-    val commandName = "cluster"
-    val commandDescription = "Cluster (but don’t merge) overlapping/nearby intervals"
+  val commandName = "cluster"
+  val commandDescription = "Cluster (but don’t merge) overlapping/nearby intervals"
 
-    def apply(cmdLine: Array[String]) = {
-      new Cluster(Args4j[ClusterArgs](cmdLine))
+  def apply(cmdLine: Array[String]) = {
+    new Cluster(Args4j[ClusterArgs](cmdLine))
+  }
+
+  class ClusterArgs extends Args4jBase with ADAMSaveAnyArgs with ParquetArgs {
+    @Argument(required = true,
+      metaVar = "INPUT",
+      usage = "The input file for cluster",
+      index = 0)
+    var input: String = null
+
+    override var sortFastqOutput: Boolean = false
+    override var asSingleFile: Boolean = false
+    override var deferMerging: Boolean = false
+    override var outputPath: String = ""
+  }
+
+  class Cluster(protected val args: ClusterArgs) extends BDGSparkCommand[ClusterArgs] {
+    val companion = Intersection
+
+    def run(sc: SparkContext) {
+      val leftGenomicRDD = sc.loadBed(args.input).repartitionAndSort()
+      UnstrandedCluster(leftGenomicRDD.flattenRddByRegions(), leftGenomicRDD.partitionMap.get)
+        .compute()
+        .collect
+        .foreach(println)
     }
-
-    class ClusterArgs extends Args4jBase with ADAMSaveAnyArgs with ParquetArgs {
-      @Argument(required = true,
-        metaVar = "INPUT",
-        usage = "The input file for cluster",
-        index = 0)
-      var input: String = null
-
-      override var sortFastqOutput: Boolean = false
-      override var asSingleFile: Boolean = false
-      override var deferMerging: Boolean = false
-      override var outputPath: String = ""
-    }
-
-    class Cluster(protected val args: ClusterArgs) extends BDGSparkCommand[ClusterArgs] {
-      val companion = Intersection
-
-      def run(sc: SparkContext) {
-        val leftGenomicRDD = sc.loadBed(args.input).repartitionAndSort()
-        UnstrandedCluster(leftGenomicRDD.flattenRddByRegions(), leftGenomicRDD.partitionMap.get)
-          .compute()
-          .collect
-          .foreach(println)
-      }
-    }
+  }
 }
