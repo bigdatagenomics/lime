@@ -30,8 +30,8 @@ sealed abstract class Cluster[T: ClassTag] extends SetTheoryWithSingleCollection
    * @param rdd The RDD after computation is complete.
    * @return The RDD after post-processing.
    */
-  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[T])]): RDD[(ReferenceRegion, Iterable[T])] = {
-    rdd
+  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])]): RDD[(ReferenceRegion, Iterable[T])] = {
+    rdd.map(f => (f._2.head._1, f._2.map(_._2)))
   }
 }
 

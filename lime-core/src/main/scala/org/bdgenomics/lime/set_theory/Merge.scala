@@ -26,8 +26,8 @@ sealed abstract class Merge[T: ClassTag] extends SetTheoryWithSingleCollection[T
    * @param rdd The RDD after computation is complete.
    * @return The RDD after post-processing.
    */
-  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[T])]): RDD[(ReferenceRegion, Iterable[T])] = {
-    rdd
+  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])]): RDD[(ReferenceRegion, Iterable[T])] = {
+    rdd.map(f => (f._1, f._2.map(_._2)))
   }
 }
 
