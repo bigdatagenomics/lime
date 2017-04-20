@@ -205,8 +205,8 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
     postProcess(finalComputed)
   }
 
-  private def localCompute(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])],
-                           distanceThreshold: Long): RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])] = {
+  protected def localCompute(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])],
+                             distanceThreshold: Long): RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])] = {
 
     rdd.mapPartitions(iter => {
       if (iter.hasNext) {
@@ -217,7 +217,7 @@ abstract class SetTheoryWithSingleCollection[T: ClassTag] extends SetTheory {
           } else {
             b.+:(a)
           }
-        }).toIterator
+        }).reverseIterator
       } else {
         Iterator()
       }

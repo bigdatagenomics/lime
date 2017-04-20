@@ -10,7 +10,7 @@ private object LimeMain {
 }
 
 private class LimeMain(args: Array[String]) extends Logging {
-  private def commands: List[BDGCommandCompanion] = List(Intersection, Sort, Merge)
+  private def commands: List[BDGCommandCompanion] = List(Complement, Intersection, Merge, Sort)
 
   private def printVersion() {
     println("Version 0")
