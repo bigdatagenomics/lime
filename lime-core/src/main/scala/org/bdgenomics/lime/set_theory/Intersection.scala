@@ -67,5 +67,4 @@ case class DistributedIntersection[T: ClassTag, U: ClassTag](leftRdd: RDD[(Refer
       (primitive(currentLeftRegion, currentRightRegion), (currentLeftValue, currentRightValue))
     }).iterator
   }
-
 }

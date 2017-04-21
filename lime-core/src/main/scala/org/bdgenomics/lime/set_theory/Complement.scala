@@ -32,53 +32,86 @@ sealed abstract class Complement[T: ClassTag] extends SetTheoryWithSingleCollect
    */
   protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])]): RDD[(ReferenceRegion, Iterable[T])] = {
     val existingComplements = getComplement(rdd, partitionMap)
+    // cache here to avoid recomputing
     existingComplements.cache()
-    val distinctRegionsCovered = existingComplements.map(_._1.referenceName).distinct().collect()
-    existingComplements.mapPartitionsWithIndex((idx, iter) => {
+    val distinctReferenceNamesCovered = existingComplements.map(_._1.referenceName).distinct().collect()
+    // on the last partition, append the reference names that we did not have previously
+    val allComplements = existingComplements.mapPartitionsWithIndex((idx, iter) => {
       if (idx == partitionMap.length - 1) {
-        iter.map(f => (f._1, f._2.map(_._2))) ++ (referenceNameBounds.keys.toSet -- distinctRegionsCovered).toList.sorted
+        iter.map(f => (f._1, f._2.map(_._2))) ++ (referenceNameBounds.keys.toSet -- distinctReferenceNamesCovered).toList.sorted
           .map(f => (referenceNameBounds(f), Iterable.empty[T]))
       } else {
         iter.map(f => (f._1, f._2.map(_._2)))
       }
     })
+    // no longer need the intermediate result
+    existingComplements.unpersist()
+    allComplements.cache()
   }
 
-  protected def getComplement(locallyMerged: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])],
+  /**
+   * Gets the complement from the pre-merged, presorted RDD.
+   *
+   * @param premergedRdd The pre-merged rdd.
+   * @param partitionMap The partition map after merge.
+   * @return An RDD of regions not represented in the RDD.
+   */
+  protected def getComplement(premergedRdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])],
                               partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]]): RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])] = {
 
     val sortedReferenceNames = referenceNameBounds.keys.toSeq.sorted
-    locallyMerged.mapPartitionsWithIndex((idx, iter) => {
+    premergedRdd.mapPartitionsWithIndex((idx, iter) => {
       if (iter.nonEmpty) {
         val next = iter.next
-        val first =
-          if (idx == 0) {
-            (next._1, (ReferenceRegion(next._1.referenceName, 0, next._1.start), next._2))
+
+        val startPosition = if (idx == 0) {
+          0
+        } else {
+          partitionMap.apply(idx - 1).get._2.start
+        }
+        val startRegion =
+          (next._1, (ReferenceRegion(next._1.referenceName, startPosition, next._1.start), next._2))
+
+        val localComplement = iter.foldLeft(List(startRegion))((b, a) => {
+          val previousRegion = b.head._1
+          val currentRegion = a._1
+
+          if (previousRegion.referenceName == currentRegion.referenceName) {
+            (currentRegion,
+              (ReferenceRegion(previousRegion.referenceName,
+                previousRegion.end, currentRegion.start),
+                a._2)) :: b
+            // there's a bit of complexity in the case that we are in between
+            // referenceNames
           } else {
-            val lastBoundOnPreviousPartition = partitionMap.apply(idx - 1).get._2
-            (next._1, (ReferenceRegion(next._1.referenceName, lastBoundOnPreviousPartition.end, next._1.start, next._1.strand), next._2))
-          }
-        val localComplement = iter.foldLeft(List(first))((b, a) => {
-          if (b.head._1.referenceName == a._1.referenceName) {
-            (a._1, (ReferenceRegion(b.head._1.referenceName, b.head._1.end, a._1.start, b.head._1.strand), a._2)) :: b
-          } else {
-            val indexOfNext = sortedReferenceNames.indexOf(a._1.referenceName)
-            val indexDifference = indexOfNext - sortedReferenceNames.indexOf(b.head._1.referenceName)
-            if (indexDifference != 1) {
-              val x = for (i <- 1 until indexDifference) yield {
-                (referenceNameBounds(sortedReferenceNames(indexOfNext + i)), (referenceNameBounds(sortedReferenceNames(indexOfNext + i)), a._2))
+            val indexOfNext = sortedReferenceNames.indexOf(currentRegion.referenceName)
+            val indexDifference = indexOfNext - sortedReferenceNames.indexOf(previousRegion.referenceName)
+            // this is the case that there are referenceNames that are not
+            // represented in the data and in the middle of the data
+            val unrepresentedReferenceNames = if (indexDifference != 1) {
+              for (i <- 1 until indexDifference) yield {
+                (referenceNameBounds(sortedReferenceNames(indexOfNext + i)),
+                  (referenceNameBounds(sortedReferenceNames(indexOfNext + i)),
+                    a._2))
               }
-              (a._1, (ReferenceRegion(a._1.referenceName, 0, a._1.start, a._1.strand), a._2)) :: x.toList ++
-                List((b.head._1, (ReferenceRegion(b.head._1.referenceName, b.head._1.end, referenceNameBounds(b.head._1.referenceName).end, b.head._1.strand), b.head._2._2))).++(b)
             } else {
-              List((a._1, (ReferenceRegion(a._1.referenceName, 0, a._1.start, a._1.strand), a._2)),
-                (b.head._1, (ReferenceRegion(b.head._1.referenceName, b.head._1.end, referenceNameBounds(b.head._1.referenceName).end, b.head._1.strand), b.head._2._2))).++(b)
+              List()
             }
+            (currentRegion,
+              (ReferenceRegion(currentRegion.referenceName, 0, currentRegion.start),
+                a._2)) :: unrepresentedReferenceNames.toList ++
+                ((previousRegion,
+                  (ReferenceRegion(previousRegion.referenceName,
+                    previousRegion.end,
+                    referenceNameBounds(previousRegion.referenceName).end),
+                    b.head._2._2)) :: b)
           }
         })
+
+        // this is necessary to bridge the gap between partitions
         val interNodeEnds =
           if (idx < partitionMap.length - 1 &&
-            !partitionMap(idx).exists(_._1.referenceName != localComplement.head._1.referenceName)) {
+            !partitionMap(idx + 1).exists(_._1.referenceName != localComplement.head._1.referenceName)) {
             List((localComplement.head._1,
               (ReferenceRegion(localComplement.head._1.referenceName,
                 localComplement.head._1.end,

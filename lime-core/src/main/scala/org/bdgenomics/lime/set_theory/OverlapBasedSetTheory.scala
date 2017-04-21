@@ -4,12 +4,8 @@ import org.apache.spark.rdd.RDD
 import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.lime.util.Partitioners.ReferenceRegionRangePartitioner
 import org.bdgenomics.utils.interval.array.IntervalArray
-
 import scala.reflect.ClassTag
 
-/**
- * Created by DevinPetersohn on 4/19/17.
- */
 abstract class OverlapBasedSetTheory[T: ClassTag, U: ClassTag, RT, RU] extends SetTheoryBetweenCollections[T, U, RT, RU] {
 
   /**
