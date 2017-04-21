@@ -24,13 +24,13 @@ sealed abstract class Subtract[T: ClassTag, U: ClassTag] extends OverlapBasedSet
   }
 
   /**
-    * The primitive for subtract produces up to two regions, so this is unused.
-    *
-    * @param firstRegion The first region for the primitive.
-    * @param secondRegion The second region for the primitive.
-    * @param distanceThreshold The threshold for the primitive.
-    * @return The computed primitive for the two regions.
-    */
+   * The primitive for subtract produces up to two regions, so this is unused.
+   *
+   * @param firstRegion The first region for the primitive.
+   * @param secondRegion The second region for the primitive.
+   * @param distanceThreshold The threshold for the primitive.
+   * @return The computed primitive for the two regions.
+   */
   override protected def primitive(firstRegion: ReferenceRegion,
                                    secondRegion: ReferenceRegion,
                                    distanceThreshold: Long = 0L): ReferenceRegion = {

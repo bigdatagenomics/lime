@@ -50,12 +50,12 @@ sealed abstract class Complement[T: ClassTag] extends SetTheoryWithSingleCollect
   }
 
   /**
-    * Gets the complement from the pre-merged, presorted RDD.
-    *
-    * @param premergedRdd The pre-merged rdd.
-    * @param partitionMap The partition map after merge.
-    * @return An RDD of regions not represented in the RDD.
-    */
+   * Gets the complement from the pre-merged, presorted RDD.
+   *
+   * @param premergedRdd The pre-merged rdd.
+   * @param partitionMap The partition map after merge.
+   * @return An RDD of regions not represented in the RDD.
+   */
   protected def getComplement(premergedRdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])],
                               partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]]): RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])] = {
 
@@ -64,7 +64,7 @@ sealed abstract class Complement[T: ClassTag] extends SetTheoryWithSingleCollect
       if (iter.nonEmpty) {
         val next = iter.next
 
-        val startPosition = if(idx == 0) {
+        val startPosition = if (idx == 0) {
           0
         } else {
           partitionMap.apply(idx - 1).get._2.start
@@ -80,7 +80,7 @@ sealed abstract class Complement[T: ClassTag] extends SetTheoryWithSingleCollect
             (currentRegion,
               (ReferenceRegion(previousRegion.referenceName,
                 previousRegion.end, currentRegion.start),
-              a._2)) :: b
+                a._2)) :: b
             // there's a bit of complexity in the case that we are in between
             // referenceNames
           } else {
@@ -99,14 +99,12 @@ sealed abstract class Complement[T: ClassTag] extends SetTheoryWithSingleCollect
             }
             (currentRegion,
               (ReferenceRegion(currentRegion.referenceName, 0, currentRegion.start),
-                a._2
-                )) :: unrepresentedReferenceNames.toList ++
-              ((previousRegion,
+                a._2)) :: unrepresentedReferenceNames.toList ++
+                ((previousRegion,
                   (ReferenceRegion(previousRegion.referenceName,
                     previousRegion.end,
                     referenceNameBounds(previousRegion.referenceName).end),
-                    b.head._2._2
-                    )) :: b)
+                    b.head._2._2)) :: b)
           }
         })
 
