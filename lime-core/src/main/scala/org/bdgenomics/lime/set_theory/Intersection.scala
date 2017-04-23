@@ -61,7 +61,7 @@ case class DistributedIntersection[T: ClassTag, U: ClassTag](leftRdd: RDD[(Refer
     val (currentLeftRegion, currentLeftValue) = current
     cache.filter(f => {
       val (rightRegion, _) = f
-      condition(rightRegion, currentLeftRegion, threshold)
+      condition(currentLeftRegion, rightRegion, threshold)
     }).map(g => {
       val (currentRightRegion, currentRightValue) = g
       (primitive(currentLeftRegion, currentRightRegion), (currentLeftValue, currentRightValue))

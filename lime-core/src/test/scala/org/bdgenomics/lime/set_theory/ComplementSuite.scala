@@ -6,9 +6,8 @@ import org.bdgenomics.lime.LimeFunSuite
 
 class ComplementSuite extends LimeFunSuite {
   sparkTest("testing complement on large bed file") {
-    //val leftRdd = sc.loadBed("/Users/DevinPetersohn/Downloads/bedtools_data/exons.bed").repartitionAndSort()
     val leftRdd = sc.loadBed(resourcesFile("/cpg_20merge.bed")).repartitionAndSort()
-    val genomeFile = sc.textFile("/Users/DevinPetersohn/Downloads/bedtools_data/genome.txt").map(_.split("\t"))
+    val genomeFile = sc.textFile(resourcesFile("/genome.txt")).map(_.split("\t"))
     val genomeMap = genomeFile.collect.map(f => f(0) -> ReferenceRegion(f(0), 0, f(1).toLong)).toMap
     val referenceRegionKeyedLeft = leftRdd.flattenRddByRegions()
 
