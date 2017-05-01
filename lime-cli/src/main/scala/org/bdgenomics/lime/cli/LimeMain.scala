@@ -11,11 +11,11 @@ private object LimeMain {
 
 private class LimeMain(args: Array[String]) extends Logging {
   private def commands: List[BDGCommandCompanion] = List(Complement,
-                                                         Intersection,
-                                                         Merge,
-                                                         Sort,
-                                                         Closest,
-                                                         Window)
+    Intersection,
+    Merge,
+    Sort,
+    Closest,
+    Window)
 
   private def printVersion() {
     println("Version 0")

@@ -1,6 +1,7 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
+import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
 import org.bdgenomics.lime.set_theory.UnstrandedCluster
@@ -26,6 +27,7 @@ object Cluster extends BDGCommandCompanion {
     override var asSingleFile: Boolean = false
     override var deferMerging: Boolean = false
     override var outputPath: String = ""
+    override var disableFastConcat: Boolean = false
   }
 
   class Cluster(protected val args: ClusterArgs) extends BDGSparkCommand[ClusterArgs] {
@@ -33,7 +35,9 @@ object Cluster extends BDGCommandCompanion {
 
     def run(sc: SparkContext) {
       val leftGenomicRDD = sc.loadBed(args.input).repartitionAndSort()
-      UnstrandedCluster(leftGenomicRDD.flattenRddByRegions(), leftGenomicRDD.partitionMap.get)
+      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
+
+      UnstrandedCluster(leftGenomicRDDKeyed, leftGenomicRDD.partitionMap.get)
         .compute()
         .collect
         .foreach(println)

@@ -1,6 +1,7 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
+import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
 import org.bdgenomics.lime.set_theory.SingleClosest
@@ -35,16 +36,22 @@ object Closest extends BDGCommandCompanion {
     override var asSingleFile: Boolean = false
     override var deferMerging: Boolean = false
     override var outputPath: String = ""
+    override var disableFastConcat: Boolean = false
   }
 
   class Closest(protected val args: ClosestArgs) extends BDGSparkCommand[ClosestArgs] {
     val companion = Closest
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.leftInput).repartitionAndSort()
-      val rightGenomicRDD = sc.loadBed(args.rightInput).copartitionByReferenceRegion(leftGenomicRDD)
+      val leftGenomicRDD = sc.loadBed(args.leftInput)
+        .repartitionAndSort()
 
-      new SingleClosest(leftGenomicRDD.flattenRddByRegions, rightGenomicRDD.flattenRddByRegions, leftGenomicRDD.partitionMap.get)
+      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
+      val rightGenomicRDD = sc.loadBed(args.rightInput)
+        .rdd
+        .map(f => (ReferenceRegion.stranded(f), f))
+
+      new SingleClosest(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.partitionMap.get)
         .compute()
         .collect()
         .foreach(println)

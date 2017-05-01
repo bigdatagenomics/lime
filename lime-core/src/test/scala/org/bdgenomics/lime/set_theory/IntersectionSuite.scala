@@ -8,7 +8,10 @@ class IntersectionSuite extends LimeFunSuite {
   sparkTest("test intersection between multiple overlapping regions") {
     val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
     val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
-    val intersection = DistributedIntersection(leftFile.flattenRddByRegions(), rightFile.flattenRddByRegions(), leftFile.partitionMap.get)
+    val intersection = DistributedIntersection(
+      leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      leftFile.partitionMap.get)
       .compute()
 
     val bedtoolsOuput = Array(ReferenceRegion("chr1", 135124, 135444),

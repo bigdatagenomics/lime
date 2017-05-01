@@ -9,7 +9,11 @@ class ClosestSuite extends LimeFunSuite {
     val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
     val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
 
-    val closestRdd = new SingleClosest(leftFile.flattenRddByRegions(), rightFile.flattenRddByRegions(), leftFile.partitionMap.get).compute()
+    val closestRdd = new SingleClosest(
+      leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      leftFile.partitionMap.get)
+      .compute()
 
     val closestResults = closestRdd.map(f => (ReferenceRegion(f._2._1.getContigName, f._2._1.getStart, f._2._1.getEnd),
       ReferenceRegion(f._2._2.getContigName, f._2._2.getStart, f._2._2.getEnd))).collect
@@ -48,7 +52,11 @@ class ClosestSuite extends LimeFunSuite {
     val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
     val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
 
-    val closestRdd = SingleClosestSingleOverlap(leftFile.flattenRddByRegions(), rightFile.flattenRddByRegions(), leftFile.partitionMap.get).compute()
+    val closestRdd = SingleClosestSingleOverlap(
+      leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      leftFile.partitionMap.get)
+      .compute()
 
     val closestResults = closestRdd.map(f => (ReferenceRegion(f._2._1.getContigName, f._2._1.getStart, f._2._1.getEnd),
       ReferenceRegion(f._2._2.getContigName, f._2._2.getStart, f._2._2.getEnd))).collect
