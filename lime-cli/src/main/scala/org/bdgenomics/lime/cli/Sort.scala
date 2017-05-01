@@ -25,6 +25,7 @@ object Sort extends BDGCommandCompanion {
     override var asSingleFile: Boolean = false
     override var deferMerging: Boolean = false
     override var outputPath: String = ""
+    override var disableFastConcat: Boolean = false
   }
 
   class Sort(protected val args: SortArgs) extends BDGSparkCommand[SortArgs] {

@@ -9,7 +9,7 @@ class ComplementSuite extends LimeFunSuite {
     val leftRdd = sc.loadBed(resourcesFile("/cpg_20merge.bed")).repartitionAndSort()
     val genomeFile = sc.textFile(resourcesFile("/genome.txt")).map(_.split("\t"))
     val genomeMap = genomeFile.collect.map(f => f(0) -> ReferenceRegion(f(0), 0, f(1).toLong)).toMap
-    val referenceRegionKeyedLeft = leftRdd.flattenRddByRegions()
+    val referenceRegionKeyedLeft = leftRdd.rdd.map(f => (ReferenceRegion.unstranded(f), f))
 
     val complements = DistributedComplement(referenceRegionKeyedLeft, leftRdd.partitionMap.get, genomeMap)
       .compute()

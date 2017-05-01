@@ -9,7 +9,10 @@ class SubtractSuite extends LimeFunSuite {
     val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
     val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
 
-    val subtraction = DistributedSubtract(leftFile.flattenRddByRegions(), rightFile.flattenRddByRegions(), leftFile.partitionMap.get)
+    val subtraction = DistributedSubtract(
+      leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      leftFile.partitionMap.get)
       .compute()
 
     val regionsSubtracted = subtraction.map(_._1).collect

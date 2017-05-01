@@ -8,14 +8,33 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
 sealed abstract class Closest[T: ClassTag, U: ClassTag] extends SetTheoryBetweenCollections[T, U, T, U] {
+
+  var currentClosest: ReferenceRegion = ReferenceRegion("", 0, 0)
+
+  /**
+   * The condition requirement here is that the first region be closer to the
+   * second region than the current closest.
+   *
+   * @param firstRegion The region to test against.
+   * @param secondRegion The region to test.
+   * @param threshold The distance requirement for closest.
+   * @return True if the threshold requirement is met.
+   *         False if the threshold requirement is not met.
+   */
+  override protected def condition(firstRegion: ReferenceRegion,
+                                   secondRegion: ReferenceRegion,
+                                   threshold: Long = 0L): Boolean = {
+    firstRegion
+      .unstrandedDistance(secondRegion)
+      .contains(firstRegion
+        .unstrandedDistance(currentClosest).getOrElse(Long.MaxValue))
+  }
 }
 
 class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(ReferenceRegion, T)],
                                               protected val rightRdd: RDD[(ReferenceRegion, U)],
                                               protected val partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
                                               protected val threshold: Long = 0L) extends Closest[T, U] {
-
-  var currentClosest: ReferenceRegion = ReferenceRegion("", 0, 0)
 
   /**
    * Prepares the two RDDs for the closest operation. Copartitions the right
@@ -130,24 +149,6 @@ class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(Refere
   }
 
   /**
-   * The condition requirement here is that the first region be closer to the
-   * second region than the current closest.
-   *
-   * @param firstRegion The region to test against.
-   * @param secondRegion The region to test.
-   * @param threshold The distance requirement for closest.
-   * @return True if the threshold requirement is met.
-   *         False if the threshold requirement is not met.
-   */
-  override protected def condition(firstRegion: ReferenceRegion,
-                                   secondRegion: ReferenceRegion,
-                                   threshold: Long = 0L): Boolean = {
-
-    firstRegion.unstrandedDistance(secondRegion).get ==
-      firstRegion.unstrandedDistance(currentClosest).get
-  }
-
-  /**
    * Prunes the cache of all regions that are no longer candidates for the
    * closest region.
    *
@@ -161,8 +162,8 @@ class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(Refere
     if (cachedRegion.referenceName != to.referenceName) {
       true
     } else {
-      to.unstrandedDistance(cachedRegion).get >
-        to.unstrandedDistance(currentClosest).getOrElse(0L)
+      to.unstrandedDistance(cachedRegion).exists(_ >
+        to.unstrandedDistance(currentClosest).getOrElse(0L))
     }
 
   }
@@ -180,8 +181,8 @@ class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(Refere
     if (candidateRegion.referenceName != until.referenceName) {
       false
     } else if (until.referenceName != currentClosest.referenceName ||
-      until.unstrandedDistance(candidateRegion).get <=
-      until.unstrandedDistance(currentClosest).getOrElse(Long.MaxValue)) {
+      until.unstrandedDistance(candidateRegion).exists(_ <=
+        until.unstrandedDistance(currentClosest).getOrElse(Long.MaxValue))) {
 
       currentClosest = candidateRegion
       true
@@ -216,26 +217,6 @@ case class SingleClosestSingleOverlap[T: ClassTag, U: ClassTag](override val lef
                                                                 override val rightRdd: RDD[(ReferenceRegion, U)],
                                                                 override val partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
                                                                 override val threshold: Long = 0L) extends SingleClosest[T, U](leftRdd, rightRdd, partitionMap, threshold) {
-  /**
-   * The condition requirement here is that the first region be closer to the
-   * second region than the current closest.
-   *
-   * @param firstRegion The region to test against.
-   * @param secondRegion The region to test.
-   * @param threshold The distance requirement for closest.
-   * @return True if the threshold requirement is met.
-   *         False if the threshold requirement is not met.
-   */
-  override protected def condition(firstRegion: ReferenceRegion,
-                                   secondRegion: ReferenceRegion,
-                                   threshold: Long = 0L): Boolean = {
-
-    (firstRegion.unstrandedDistance(secondRegion).get ==
-      firstRegion.unstrandedDistance(currentClosest).get &&
-      firstRegion.unstrandedDistance(secondRegion).get != 0) ||
-      (firstRegion.covers(secondRegion) &&
-        firstRegion.coversBy(secondRegion).get == firstRegion.coversBy(currentClosest).get)
-  }
 
   /**
    * Prunes the cache of all regions that are no longer candidates for the
@@ -252,8 +233,8 @@ case class SingleClosestSingleOverlap[T: ClassTag, U: ClassTag](override val lef
       true
     } else {
       (to.covers(cachedRegion) &&
-        to.coversBy(cachedRegion).get < to.coversBy(currentClosest).getOrElse(Long.MaxValue)) ||
-        (to.unstrandedDistance(cachedRegion).get >
+        to.coversBy(cachedRegion).exists(_ < to.coversBy(currentClosest).getOrElse(Long.MaxValue))) ||
+        to.unstrandedDistance(cachedRegion).exists(_ >
           to.unstrandedDistance(currentClosest).getOrElse(0L))
     }
 
@@ -273,10 +254,10 @@ case class SingleClosestSingleOverlap[T: ClassTag, U: ClassTag](override val lef
       false
     } else if (until.referenceName != currentClosest.referenceName ||
       (until.covers(candidateRegion) &&
-        until.coversBy(candidateRegion).get >= until.coversBy(currentClosest).getOrElse(0L)) ||
+        until.coversBy(candidateRegion).exists(_ >= until.coversBy(currentClosest).getOrElse(0L))) ||
         (!until.covers(candidateRegion) &&
-          until.unstrandedDistance(candidateRegion).get <=
-          until.unstrandedDistance(currentClosest).getOrElse(Long.MaxValue))) {
+          until.unstrandedDistance(candidateRegion).exists(_ <=
+            until.unstrandedDistance(currentClosest).getOrElse(Long.MaxValue)))) {
 
       currentClosest = candidateRegion
       true

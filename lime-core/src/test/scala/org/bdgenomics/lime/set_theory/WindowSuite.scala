@@ -9,7 +9,10 @@ class WindowSuite extends LimeFunSuite {
     val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
     val rightFile = sc.loadBed(resourcesFile("/window_with_overlap_01.bed"))
 
-    val windows = DistributedWindow(leftFile.flattenRddByRegions(), rightFile.flattenRddByRegions(), leftFile.partitionMap.get)
+    val windows = DistributedWindow(
+      leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
+      leftFile.partitionMap.get)
       .compute()
       .map(f =>
         (ReferenceRegion(f._2._1.getContigName, f._2._1.getStart, f._2._1.getEnd),

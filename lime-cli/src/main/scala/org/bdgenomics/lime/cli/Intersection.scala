@@ -1,6 +1,7 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
+import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
 import org.bdgenomics.lime.set_theory.DistributedIntersection
@@ -31,16 +32,22 @@ object Intersection extends BDGCommandCompanion {
     override var asSingleFile: Boolean = false
     override var deferMerging: Boolean = false
     override var outputPath: String = ""
+    override var disableFastConcat: Boolean = false
   }
 
   class Intersection(protected val args: IntersectionArgs) extends BDGSparkCommand[IntersectionArgs] {
     val companion = Intersection
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.leftInput).repartitionAndSort()
-      val rightGenomicRDD = sc.loadBed(args.rightInput).copartitionByReferenceRegion(leftGenomicRDD)
+      val leftGenomicRDD = sc.loadBed(args.leftInput)
+        .repartitionAndSort()
 
-      DistributedIntersection(leftGenomicRDD.flattenRddByRegions, rightGenomicRDD.flattenRddByRegions, leftGenomicRDD.partitionMap.get)
+      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
+      val rightGenomicRDD = sc.loadBed(args.rightInput)
+        .rdd
+        .map(f => (ReferenceRegion.stranded(f), f))
+
+      DistributedIntersection(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.partitionMap.get)
         .compute()
         .collect()
         .foreach(println)

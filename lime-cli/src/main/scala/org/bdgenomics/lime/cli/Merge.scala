@@ -1,6 +1,7 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
+import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
 import org.bdgenomics.lime.set_theory.DistributedMerge
@@ -26,15 +27,18 @@ object Merge extends BDGCommandCompanion {
     override var asSingleFile: Boolean = false
     override var deferMerging: Boolean = false
     override var outputPath: String = ""
+    override var disableFastConcat: Boolean = false
   }
 
   class Merge(protected val args: MergeArgs) extends BDGSparkCommand[MergeArgs] {
     val companion = Merge
 
     def run(sc: SparkContext) = {
-      val genomicRdd = sc.loadBed(args.input).repartitionAndSort()
-      DistributedMerge(genomicRdd.flattenRddByRegions(),
-        genomicRdd.partitionMap.get)
+      val leftGenomicRDD = sc.loadBed(args.input).repartitionAndSort()
+      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
+
+      DistributedMerge(leftGenomicRDDKeyed,
+        leftGenomicRDD.partitionMap.get)
         .compute()
         .collect.foreach(println)
     }
