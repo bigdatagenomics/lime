@@ -15,6 +15,7 @@ private class LimeMain(args: Array[String]) extends Logging {
     Merge,
     Sort,
     Closest,
+    Jaccard,
     Window)
 
   private def printVersion() {

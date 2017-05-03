@@ -7,7 +7,7 @@ import org.bdgenomics.lime.LimeFunSuite
 class IntersectionSuite extends LimeFunSuite {
   sparkTest("test intersection between multiple overlapping regions") {
     val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
-    val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
+    val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed")).repartitionAndSort()
     val intersection = DistributedIntersection(
       leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
       rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
