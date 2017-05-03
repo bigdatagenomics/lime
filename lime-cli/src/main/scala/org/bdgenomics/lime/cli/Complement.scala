@@ -32,7 +32,7 @@ object Complement extends BDGCommandCompanion {
     override var asSingleFile: Boolean = false
     override var deferMerging: Boolean = false
     override var outputPath: String = ""
-    override var disableFastConcat: Boolean = false
+    //override var disableFastConcat: Boolean = false
   }
 
   class Complement(protected val args: ComplementArgs) extends BDGSparkCommand[ComplementArgs] {
