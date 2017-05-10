@@ -11,8 +11,11 @@ import org.apache.spark.storage.StorageLevel
 import org.bdgenomics.formats.avro.Feature
 import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.feature.FeatureRDD
+<<<<<<< HEAD
 import org.bdgenomics.lime.cli
 import org.bdgenomics.lime.set_statistics.JaccardDistance
+=======
+>>>>>>> 8e1a59f8bb29108c25ec9ce70ca8a97555d127ac
 object Jaccard extends BDGCommandCompanion {
   val commandName = "jaccard"
   val commandDescription = "Compute jaccard distance between two inputs"
@@ -43,6 +46,7 @@ object Jaccard extends BDGCommandCompanion {
     val companion = Jaccard
 
     def run(sc: SparkContext) {
+
       val leftGenomicRDD = sc.loadFeatures(args.leftInput).repartitionAndSort()
 
       val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.unstranded(f), f))
@@ -55,6 +59,7 @@ object Jaccard extends BDGCommandCompanion {
         rightGenomicRdd.partitionMap.get).compute()
       println("$ Intersection $ Union-Intersection $ Jaccard")
       println("$ " + jaccard_dist(0) + " $ " + jaccard_dist(1) + " $ " + jaccard_dist(2))
+
 
     }
   }

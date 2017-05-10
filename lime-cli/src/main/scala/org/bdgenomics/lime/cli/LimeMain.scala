@@ -12,6 +12,7 @@ private object LimeMain {
 private class LimeMain(args: Array[String]) extends Logging {
   private def commands: List[BDGCommandCompanion] = List(Complement,
     Intersection,
+    Jaccard,
     Merge,
     Sort,
     Closest,
