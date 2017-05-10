@@ -11,6 +11,8 @@ import org.apache.spark.storage.StorageLevel
 import org.bdgenomics.formats.avro.Feature
 import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.feature.FeatureRDD
+import org.bdgenomics.lime.cli
+import org.bdgenomics.lime.set_statistics.JaccardDistance
 object Jaccard extends BDGCommandCompanion {
   val commandName = "jaccard"
   val commandDescription = "Compute jaccard distance between two inputs"
@@ -41,41 +43,18 @@ object Jaccard extends BDGCommandCompanion {
     val companion = Jaccard
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.leftInput).repartitionAndSort()
+      val leftGenomicRDD = sc.loadFeatures(args.leftInput).repartitionAndSort()
+
       val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.unstranded(f), f))
-      val rightGenomicRdd = sc.loadBed(args.rightInput).repartitionAndSort()
-      val rightGenomicRDDKeyed = rightGenomicRdd.rdd
-        .map(f => (ReferenceRegion.unstranded(f), f))
 
-      //Intersection of the two files and merging the result to calculate intersect_lengthe
-      val intersectedRdd = DistributedIntersection(leftGenomicRDDKeyed, rightGenomicRDDKeyed, leftGenomicRDD.partitionMap.get)
-        .compute().map(f => {
+      val rightGenomicRdd = sc.loadFeatures(args.rightInput).repartitionAndSort()
 
-          val new_feature = new Feature(f._2._1.getFeatureId(), f._2._1.getName(), f._2._1.getSource(), f._2._1.getFeatureType(),
-            f._2._1.getContigName(), f._1.start, f._1.end, f._2._1.getStrand(), f._2._1.getPhase(), f._2._1.getFrame(),
-            f._2._1.getScore(), f._2._1.getGeneId(), f._2._1.getTranscriptId(), f._2._1.getExonId(), f._2._1.getAliases(),
-            f._2._1.getParentIds(), f._2._1.getTarget(), f._2._1.getGap(), f._2._1.getDerivesFrom(), f._2._1.getNotes(), f._2._1.getDbxrefs(),
-            f._2._1.getOntologyTerms(), f._2._1.getCircular(), f._2._1.getAttributes())
+      val rightGenomicRDDKeyed = rightGenomicRdd.rdd.map(f => (ReferenceRegion.unstranded(f), f))
 
-          (f._1, new_feature)
-        })
-      val premergedIntersectRDD = FeatureRDD.inferSequenceDictionary(intersectedRdd.map(_._2), Some(StorageLevel.MEMORY_ONLY))
-      val mergedIntersectRDD = DistributedMerge(premergedIntersectRDD.rdd.map(f => (ReferenceRegion.unstranded(f), f)), leftGenomicRDD.partitionMap.get).compute()
-      val intersect_length = mergedIntersectRDD.map(f => f._1.length()).sum()
-
-      val tempRightRDD = rightGenomicRdd.repartitionAndSort()
-
-      //Merging the two input files for union cacluclation
-      val leftmergedRDD = DistributedMerge(leftGenomicRDDKeyed, leftGenomicRDD.partitionMap.get).compute()
-
-      val rightmergedRDD = DistributedMerge(rightGenomicRDDKeyed, rightGenomicRdd.partitionMap.get).compute()
-      //Union Calculation
-
-      val union_length = leftmergedRDD.map(f => f._1.length()).sum() + rightmergedRDD.map(f => f._1.length()).sum()
-
-      val jaccard = intersect_length / (union_length - intersect_length)
-
-      println(intersect_length + " " + (union_length - intersect_length) + " " + jaccard)
+      val jaccard_dist = new JaccardDistance(leftGenomicRDDKeyed, rightGenomicRDDKeyed, leftGenomicRDD.partitionMap.get,
+        rightGenomicRdd.partitionMap.get).compute()
+      println("$ Intersection $ Union-Intersection $ Jaccard")
+      println("$ " + jaccard_dist(0) + " $ " + jaccard_dist(1) + " $ " + jaccard_dist(2))
 
     }
   }
