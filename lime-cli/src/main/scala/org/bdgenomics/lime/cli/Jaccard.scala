@@ -3,19 +3,11 @@ package org.bdgenomics.lime.cli
 import org.apache.spark.SparkContext
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.{ ADAMSaveAnyArgs, GenomicRDD, feature }
-import org.bdgenomics.lime.set_theory.DistributedIntersection
-import org.bdgenomics.lime.set_theory.DistributedMerge
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
-import org.apache.spark.storage.StorageLevel
-import org.bdgenomics.formats.avro.Feature
 import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.feature.FeatureRDD
-<<<<<<< HEAD
-import org.bdgenomics.lime.cli
 import org.bdgenomics.lime.set_statistics.JaccardDistance
-=======
->>>>>>> 8e1a59f8bb29108c25ec9ce70ca8a97555d127ac
+
 object Jaccard extends BDGCommandCompanion {
   val commandName = "jaccard"
   val commandDescription = "Compute jaccard distance between two inputs"
@@ -59,7 +51,6 @@ object Jaccard extends BDGCommandCompanion {
         rightGenomicRdd.partitionMap.get).compute()
       println("$ Intersection $ Union-Intersection $ Jaccard")
       println("$ " + jaccard_dist(0) + " $ " + jaccard_dist(1) + " $ " + jaccard_dist(2))
-
 
     }
   }

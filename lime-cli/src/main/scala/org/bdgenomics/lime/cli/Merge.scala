@@ -27,7 +27,7 @@ object Merge extends BDGCommandCompanion {
     override var asSingleFile: Boolean = false
     override var deferMerging: Boolean = false
     override var outputPath: String = ""
-    //override var disableFastConcat: Boolean = false
+    override var disableFastConcat: Boolean = false
   }
 
   class Merge(protected val args: MergeArgs) extends BDGSparkCommand[MergeArgs] {
