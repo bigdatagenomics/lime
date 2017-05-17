@@ -34,11 +34,11 @@ object Merge extends BDGCommandCompanion {
     val companion = Merge
 
     def run(sc: SparkContext) = {
-      val leftGenomicRDD = sc.loadBed(args.input).repartitionAndSort()
+      val leftGenomicRDD = sc.loadBed(args.input).sortLexicographically()
       val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
 
       DistributedMerge(leftGenomicRDDKeyed,
-        leftGenomicRDD.partitionMap.get)
+        leftGenomicRDD.optPartitionMap.get)
         .compute()
         .collect.foreach(println)
     }

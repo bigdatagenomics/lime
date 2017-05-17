@@ -34,7 +34,7 @@ object Sort extends BDGCommandCompanion {
     def run(sc: SparkContext) {
       val genomicRdd = sc.loadBed(args.input)
 
-      genomicRdd.repartitionAndSort().rdd.collect.foreach(println)
+      genomicRdd.sortLexicographically().rdd.collect.foreach(println)
     }
   }
 }

@@ -32,6 +32,7 @@ object Jaccard extends BDGCommandCompanion {
     override var asSingleFile: Boolean = false
     override var deferMerging: Boolean = false
     override var outputPath: String = ""
+    override var disableFastConcat: Boolean = false
   }
 
   class Jaccard(protected val args: JaccardArgs) extends BDGSparkCommand[JaccardArgs] {
@@ -39,18 +40,14 @@ object Jaccard extends BDGCommandCompanion {
 
     def run(sc: SparkContext) {
 
-      val leftGenomicRDD = sc.loadFeatures(args.leftInput).repartitionAndSort()
-
+      val leftGenomicRDD = sc.loadFeatures(args.leftInput).sortLexicographically()
       val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.unstranded(f), f))
-
-      val rightGenomicRdd = sc.loadFeatures(args.rightInput).repartitionAndSort()
-
+      val rightGenomicRdd = sc.loadFeatures(args.rightInput).sortLexicographically()
       val rightGenomicRDDKeyed = rightGenomicRdd.rdd.map(f => (ReferenceRegion.unstranded(f), f))
 
-      val jaccard_dist = new JaccardDistance(leftGenomicRDDKeyed, rightGenomicRDDKeyed, leftGenomicRDD.partitionMap.get,
-        rightGenomicRdd.partitionMap.get).compute()
-      println("$ Intersection $ Union-Intersection $ Jaccard")
-      println("$ " + jaccard_dist(0) + " $ " + jaccard_dist(1) + " $ " + jaccard_dist(2))
+      val jaccard_dist = new JaccardDistance(leftGenomicRDDKeyed, rightGenomicRDDKeyed, leftGenomicRDD.optPartitionMap.get,
+        rightGenomicRdd.optPartitionMap.get).compute()
+      println(jaccard_dist)
 
     }
   }

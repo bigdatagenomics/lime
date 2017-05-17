@@ -39,12 +39,12 @@ object Complement extends BDGCommandCompanion {
     val companion = Complement
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.leftInput).repartitionAndSort()
+      val leftGenomicRDD = sc.loadBed(args.leftInput).sortLexicographically()
       val genomeFile = sc.textFile(args.rightInput).map(_.split("\t"))
       val genomeMap = genomeFile.collect.map(f => f(0) -> ReferenceRegion(f(0), 0, f(1).toLong)).toMap
       val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
 
-      DistributedComplement(leftGenomicRDDKeyed, leftGenomicRDD.partitionMap.get, genomeMap)
+      DistributedComplement(leftGenomicRDDKeyed, leftGenomicRDD.optPartitionMap.get, genomeMap)
         .compute()
         .map(_._1)
         .collect()
