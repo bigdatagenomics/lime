@@ -37,6 +37,7 @@ private case class JaccardStatistic(intersectLength: Long,
                                     nIntersections: Long) extends StatisticResult {
 
   override def toString(): String = {
+
     "intersection\tunion-intersection\tjaccard\tn_intersections\n" +
       s"$intersectLength\t$unionLength\t$jaccardDist\t$nIntersections"
   }

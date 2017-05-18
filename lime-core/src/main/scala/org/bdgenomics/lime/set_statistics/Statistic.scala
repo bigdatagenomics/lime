@@ -5,5 +5,6 @@ protected abstract class Statistic {
 }
 
 protected abstract class StatisticResult {
+
   override def toString(): String
 }
