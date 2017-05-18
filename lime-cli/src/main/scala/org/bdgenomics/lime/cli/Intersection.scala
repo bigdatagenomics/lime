@@ -40,14 +40,14 @@ object Intersection extends BDGCommandCompanion {
 
     def run(sc: SparkContext) {
       val leftGenomicRDD = sc.loadBed(args.leftInput)
-        .repartitionAndSort()
+        .sortLexicographically()
 
       val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
       val rightGenomicRDD = sc.loadBed(args.rightInput)
         .rdd
         .map(f => (ReferenceRegion.stranded(f), f))
 
-      DistributedIntersection(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.partitionMap.get)
+      DistributedIntersection(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.optPartitionMap.get)
         .compute()
         .collect()
         .foreach(println)

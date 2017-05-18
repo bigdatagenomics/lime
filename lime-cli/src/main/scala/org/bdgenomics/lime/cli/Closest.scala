@@ -44,14 +44,14 @@ object Closest extends BDGCommandCompanion {
 
     def run(sc: SparkContext) {
       val leftGenomicRDD = sc.loadBed(args.leftInput)
-        .repartitionAndSort()
+        .sortLexicographically()
 
       val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
       val rightGenomicRDD = sc.loadBed(args.rightInput)
         .rdd
         .map(f => (ReferenceRegion.stranded(f), f))
 
-      new SingleClosest(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.partitionMap.get)
+      new SingleClosest(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.optPartitionMap.get)
         .compute()
         .collect()
         .foreach(println)

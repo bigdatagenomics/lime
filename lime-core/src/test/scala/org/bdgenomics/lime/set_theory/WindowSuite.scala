@@ -6,13 +6,13 @@ import org.bdgenomics.lime.LimeFunSuite
 
 class WindowSuite extends LimeFunSuite {
   sparkTest("testing window matches bedtools output") {
-    val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
+    val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).sortLexicographically()
     val rightFile = sc.loadBed(resourcesFile("/window_with_overlap_01.bed"))
 
     val windows = DistributedWindow(
       leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
       rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
-      leftFile.partitionMap.get)
+      leftFile.optPartitionMap.get)
       .compute()
       .map(f =>
         (ReferenceRegion(f._2._1.getContigName, f._2._1.getStart, f._2._1.getEnd),
