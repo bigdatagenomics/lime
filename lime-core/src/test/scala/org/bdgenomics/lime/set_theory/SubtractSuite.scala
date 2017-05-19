@@ -6,13 +6,13 @@ import org.bdgenomics.lime.LimeFunSuite
 
 class SubtractSuite extends LimeFunSuite {
   sparkTest("test subtract between multiple overlapping regions") {
-    val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
+    val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).sortLexicographically()
     val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
 
     val subtraction = DistributedSubtract(
       leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
       rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
-      leftFile.partitionMap.get)
+      leftFile.optPartitionMap.get)
       .compute()
 
     val regionsSubtracted = subtraction.map(_._1).collect

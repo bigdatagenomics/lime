@@ -34,10 +34,10 @@ object Cluster extends BDGCommandCompanion {
     val companion = Intersection
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.input).repartitionAndSort()
+      val leftGenomicRDD = sc.loadBed(args.input).sortLexicographically()
       val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
 
-      UnstrandedCluster(leftGenomicRDDKeyed, leftGenomicRDD.partitionMap.get)
+      UnstrandedCluster(leftGenomicRDDKeyed, leftGenomicRDD.optPartitionMap.get)
         .compute()
         .collect
         .foreach(println)

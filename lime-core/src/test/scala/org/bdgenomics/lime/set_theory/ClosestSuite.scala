@@ -6,13 +6,13 @@ import org.bdgenomics.adam.rdd.ADAMContext._
 
 class ClosestSuite extends LimeFunSuite {
   sparkTest("Testing closest with ties and multiple overlap matches bedtools output") {
-    val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
+    val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).sortLexicographically()
     val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
 
     val closestRdd = new SingleClosest(
       leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
       rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
-      leftFile.partitionMap.get)
+      leftFile.optPartitionMap.get)
       .compute()
 
     val closestResults = closestRdd.map(f => (ReferenceRegion(f._2._1.getContigName, f._2._1.getStart, f._2._1.getEnd),
@@ -49,13 +49,13 @@ class ClosestSuite extends LimeFunSuite {
   }
 
   sparkTest("Testing closest single highest overlap matches bedtools output") {
-    val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).repartitionAndSort()
+    val leftFile = sc.loadBed(resourcesFile("/intersect_with_overlap_00.bed")).sortLexicographically()
     val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
 
     val closestRdd = SingleClosestSingleOverlap(
       leftFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
       rightFile.rdd.map(f => (ReferenceRegion.unstranded(f), f)),
-      leftFile.partitionMap.get)
+      leftFile.optPartitionMap.get)
       .compute()
 
     val closestResults = closestRdd.map(f => (ReferenceRegion(f._2._1.getContigName, f._2._1.getStart, f._2._1.getEnd),
