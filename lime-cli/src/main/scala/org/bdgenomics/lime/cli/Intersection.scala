@@ -1,10 +1,9 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
-import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
-import org.bdgenomics.lime.set_theory.DistributedIntersection
+import org.bdgenomics.lime.set_theory.ShuffleIntersection
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 
@@ -40,15 +39,11 @@ object Intersection extends BDGCommandCompanion {
 
     def run(sc: SparkContext) {
       val leftGenomicRDD = sc.loadBed(args.leftInput)
-        .repartitionAndSort()
-
-      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
       val rightGenomicRDD = sc.loadBed(args.rightInput)
-        .rdd
-        .map(f => (ReferenceRegion.stranded(f), f))
 
-      DistributedIntersection(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.partitionMap.get)
+      ShuffleIntersection(leftGenomicRDD, rightGenomicRDD)
         .compute()
+        .rdd
         .collect()
         .foreach(println)
     }

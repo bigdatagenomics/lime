@@ -1,11 +1,10 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
-import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
 import org.bdgenomics.adam.rdd.ADAMContext._
+import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
 import org.bdgenomics.adam.rdd.feature.FeatureRDD
-import org.bdgenomics.lime.set_theory.DistributedWindow
+import org.bdgenomics.lime.set_theory.ShuffleWindow
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 
@@ -41,15 +40,11 @@ object Window extends BDGCommandCompanion {
 
     def run(sc: SparkContext) {
       val leftGenomicRDD: FeatureRDD = sc.loadBed(args.leftInput)
-        .repartitionAndSort()
-
-      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
       val rightGenomicRDD = sc.loadBed(args.rightInput)
-        .rdd
-        .map(f => (ReferenceRegion.stranded(f), f))
 
-      DistributedWindow(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.partitionMap.get)
+      ShuffleWindow(leftGenomicRDD, rightGenomicRDD)
         .compute()
+        .rdd
         .collect()
         .foreach(println)
     }

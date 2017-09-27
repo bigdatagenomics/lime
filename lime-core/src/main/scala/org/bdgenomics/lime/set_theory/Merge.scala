@@ -1,36 +1,33 @@
 package org.bdgenomics.lime.set_theory
 
-import org.apache.spark.rdd.RDD
 import org.bdgenomics.adam.models.ReferenceRegion
+import org.bdgenomics.adam.rdd.{ GenericGenomicRDD, GenomicRDD }
 import scala.reflect.ClassTag
 
-sealed abstract class Merge[T: ClassTag] extends SetTheoryWithSingleCollection[T] {
-  def primitive(firstRegion: ReferenceRegion,
-                secondRegion: ReferenceRegion,
-                distanceThreshold: Long = 0L): ReferenceRegion = {
+sealed abstract class Merge[T, U <: GenomicRDD[T, U]] extends SingleCollectionSetTheory[T, Iterable[T]] {
 
-    firstRegion.merge(secondRegion, distanceThreshold)
+  override protected def predicate(joinedTuple: (T, Iterable[T])): (T, Iterable[T]) = joinedTuple
+
+  override protected def reducePredicate(a: (T, Iterable[T]), b: (T, Iterable[T])): (T, Iterable[T]) = {
+    (a._1, (a._2 ++ b._2).toStream.distinct.toIterable)
   }
 
-  def condition(firstRegion: ReferenceRegion,
-                secondRegion: ReferenceRegion,
-                distanceThreshold: Long = 0L): Boolean = {
+  override protected def regionPredicate(regions: ((T, Iterable[T])) => Seq[ReferenceRegion]): ((T, Iterable[T])) => Seq[ReferenceRegion] = {
 
-    firstRegion.overlaps(secondRegion, distanceThreshold)
-  }
-
-  /**
-   * Post processing in Merge does nothing, as the key already represents
-   * the value.
-   *
-   * @param rdd The RDD after computation is complete.
-   * @return The RDD after post-processing.
-   */
-  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])]): RDD[(ReferenceRegion, Iterable[T])] = {
-    rdd.map(f => (f._1, f._2.map(_._2)))
+    regions.andThen(f => {
+      if (f(0) != f(1)) {
+        Seq()
+      } else {
+        Seq(f.min.hull(f.max))
+      }
+    })
   }
 }
 
-case class DistributedMerge[T: ClassTag](@transient rddToCompute: RDD[(ReferenceRegion, T)],
-                                         @transient partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                         @transient threshold: Long = 0L) extends Merge[T]
+case class ShuffleMerge[T, U <: GenomicRDD[T, U]](genomicRdd: GenomicRDD[T, U],
+                                                  threshold: Long = 0L) extends Merge[T, U] {
+
+  override protected def join()(implicit tTag: ClassTag[T]): GenericGenomicRDD[(T, Iterable[T])] = {
+    genomicRdd.shuffleRegionJoinAndGroupByLeft(genomicRdd, threshold)
+  }
+}

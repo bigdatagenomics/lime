@@ -1,121 +1,33 @@
 package org.bdgenomics.lime.set_theory
 
-import org.apache.spark.rdd.RDD
 import org.bdgenomics.adam.models.ReferenceRegion
+import org.bdgenomics.adam.rdd.{ GenomicRDD, GenericGenomicRDD }
 
 import scala.reflect.ClassTag
 
-sealed abstract class Cluster[T: ClassTag] extends SetTheoryWithSingleCollection[T] {
+sealed abstract class Cluster[T, U <: GenomicRDD[T, U]] extends SingleCollectionSetTheory[T, Iterable[T]] {
 
-  /**
-   * In Cluster, there is no primitive operation, but we have to merge to
-   * continue extending our cluster. This is taken care of in post-processing.
-   *
-   * @param firstRegion The first region for the primitive.
-   * @param secondRegion The second region for the primitive.
-   * @param distanceThreshold The threshold for the primitive.
-   * @return The computed primitive for the two regions.
-   */
-  def primitive(firstRegion: ReferenceRegion,
-                secondRegion: ReferenceRegion,
-                distanceThreshold: Long = 0L): ReferenceRegion = {
+  override protected def predicate(joinedTuple: (T, Iterable[T])): (T, Iterable[T]) = joinedTuple
 
-    firstRegion.merge(secondRegion, distanceThreshold)
+  override protected def reducePredicate(a: (T, Iterable[T]), b: (T, Iterable[T])): (T, Iterable[T]) = {
+    (a._1, (a._2 ++ b._2).toStream.distinct.toIterable)
   }
 
-  /**
-   * Post processes clustered regions such that the first region in the
-   * cluster is the key.
-   *
-   * @param rdd The RDD after computation is complete.
-   * @return The RDD after post-processing.
-   */
-  protected def postProcess(rdd: RDD[(ReferenceRegion, Iterable[(ReferenceRegion, T)])]): RDD[(ReferenceRegion, Iterable[T])] = {
-    rdd.map(f => (f._2.head._1, f._2.map(_._2)))
+  override protected def regionPredicate(regions: ((T, Iterable[T])) => Seq[ReferenceRegion]): ((T, Iterable[T])) => Seq[ReferenceRegion] = {
+    regions.andThen(f => {
+      if (f(0) != f(1)) {
+        Seq()
+      } else {
+        f
+      }
+    })
   }
 }
 
-case class UnstrandedCluster[T: ClassTag](@transient rddToCompute: RDD[(ReferenceRegion, T)],
-                                          @transient partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                          @transient threshold: Long = 0L) extends Cluster[T] {
+case class ShuffleCluster[T, U <: GenomicRDD[T, U]](genomicRdd: GenomicRDD[T, U],
+                                                    threshold: Long = 0L) extends Cluster[T, U] {
 
-  /**
-   * UnstrandedCluster does not enforce strandedness, so we use cover.
-   *
-   * @param firstRegion The region to test against.
-   * @param secondRegion The region to test.
-   * @param distanceThreshold The threshold for the primitive.
-   * @return True if the threshold requirement is met.
-   *         False if the threshold requirement is not met.
-   */
-  def condition(firstRegion: ReferenceRegion,
-                secondRegion: ReferenceRegion,
-                distanceThreshold: Long = 0L): Boolean = {
-
-    firstRegion.covers(secondRegion, distanceThreshold)
-  }
-}
-
-case class StrandedCluster[T: ClassTag](@transient rddToCompute: RDD[(ReferenceRegion, T)],
-                                        @transient partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                        @transient threshold: Long = 0L) extends Cluster[T] {
-
-  /**
-   * StrandedCluster requires the same strand, so overlap is used here.
-   *
-   * @param firstRegion The region to test against.
-   * @param secondRegion The region to test.
-   * @param distanceThreshold The threshold for the primitive.
-   * @return True if the threshold requirement is met.
-   *         False if the threshold requirement is not met.
-   */
-  def condition(firstRegion: ReferenceRegion,
-                secondRegion: ReferenceRegion,
-                distanceThreshold: Long = 0L): Boolean = {
-
-    firstRegion.overlaps(secondRegion, distanceThreshold)
-  }
-}
-
-case class UnstrandedClusterWithMinimumOverlap[T: ClassTag](@transient rddToCompute: RDD[(ReferenceRegion, T)],
-                                                            @transient partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                                            @transient threshold: Long = 0L) extends Cluster[T] {
-
-  /**
-   * UnstrandedClusterWithMinimumOverlap does not require identical stranded,
-   * but does require a minimum overlap.
-   *
-   * @param firstRegion The region to test against.
-   * @param secondRegion The region to test.
-   * @param distanceThreshold The threshold for the primitive.
-   * @return True if the threshold requirement is met.
-   *         False if the threshold requirement is not met.
-   */
-  def condition(firstRegion: ReferenceRegion,
-                secondRegion: ReferenceRegion,
-                distanceThreshold: Long = 0L): Boolean = {
-
-    firstRegion.coversBy(secondRegion).exists(_ >= distanceThreshold)
-  }
-}
-
-case class StrandedClusterWithMinimumOverlap[T: ClassTag](@transient rddToCompute: RDD[(ReferenceRegion, T)],
-                                                          @transient partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                                          @transient threshold: Long = 0L) extends Cluster[T] {
-  /**
-   * StrandedClusterWithMinimumOverlap requires both strand identity and
-   * minimum overlap.
-   *
-   * @param firstRegion The region to test against.
-   * @param secondRegion The region to test.
-   * @param distanceThreshold The threshold for the primitive.
-   * @return True if the threshold requirement is met.
-   *         False if the threshold requirement is not met.
-   */
-  def condition(firstRegion: ReferenceRegion,
-                secondRegion: ReferenceRegion,
-                distanceThreshold: Long = 0L): Boolean = {
-
-    firstRegion.overlapsBy(secondRegion).exists(_ >= distanceThreshold)
+  override protected def join()(implicit tTag: ClassTag[T]): GenericGenomicRDD[(T, Iterable[T])] = {
+    genomicRdd.shuffleRegionJoinAndGroupByLeft(genomicRdd, threshold)
   }
 }

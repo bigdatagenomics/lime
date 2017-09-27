@@ -1,15 +1,8 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
-import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
-import org.bdgenomics.lime.set_theory.SingleClosest
-import org.bdgenomics.utils.cli.Args4j
-import org.bdgenomics.utils.cli.Args4jBase
-import org.bdgenomics.utils.cli.BDGCommandCompanion
-import org.bdgenomics.utils.cli.BDGSparkCommand
-import org.bdgenomics.utils.cli.ParquetArgs
+import org.bdgenomics.utils.cli.{ Args4j, Args4jBase, BDGCommandCompanion, BDGSparkCommand, ParquetArgs }
 import org.kohsuke.args4j.Argument
 
 object Closest extends BDGCommandCompanion {
@@ -43,18 +36,20 @@ object Closest extends BDGCommandCompanion {
     val companion = Closest
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.leftInput)
-        .repartitionAndSort()
-
-      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
-      val rightGenomicRDD = sc.loadBed(args.rightInput)
-        .rdd
-        .map(f => (ReferenceRegion.stranded(f), f))
-
-      new SingleClosest(leftGenomicRDDKeyed, rightGenomicRDD, leftGenomicRDD.partitionMap.get)
-        .compute()
-        .collect()
-        .foreach(println)
+      println("Not supported")
+      //      val leftGenomicRDD = sc.loadBed(args.leftInput)
+      //
+      //
+      //      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
+      //      val rightGenomicRDD = sc.loadBed(args.rightInput)
+      //        .rdd
+      //        .map(f => (ReferenceRegion.stranded(f), f))
+      //
+      //
+      //      new SingleClosest(leftGenomicRDDKeyed, rightGenomicRDD)
+      //        .compute()
+      //        .collect()
+      //        .foreach(println)
     }
   }
 }

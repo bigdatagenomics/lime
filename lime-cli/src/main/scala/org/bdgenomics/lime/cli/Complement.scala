@@ -1,10 +1,7 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
-import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
-import org.bdgenomics.lime.set_theory.DistributedComplement
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 
@@ -39,16 +36,18 @@ object Complement extends BDGCommandCompanion {
     val companion = Complement
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.leftInput).repartitionAndSort()
-      val genomeFile = sc.textFile(args.rightInput).map(_.split("\t"))
-      val genomeMap = genomeFile.collect.map(f => f(0) -> ReferenceRegion(f(0), 0, f(1).toLong)).toMap
-      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
-
-      DistributedComplement(leftGenomicRDDKeyed, leftGenomicRDD.partitionMap.get, genomeMap)
-        .compute()
-        .map(_._1)
-        .collect()
-        .foreach(println)
+      println("Not supported")
+      //      val leftGenomicRDD = sc.loadBed(args.leftInput)
+      //      val genomeFile = sc.textFile(args.rightInput).map(_.split("\t"))
+      //      val genomeMap = genomeFile.collect.map(f => f(0) -> ReferenceRegion(f(0), 0, f(1).toLong)).toMap
+      //      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
+      //
+      //      ShuffleComplement(leftGenomicRDDKeyed, leftGenomicRDD.partitionMap.get, genomeMap)
+      //        .compute()
+      //        .rdd
+      //        .map(_._1)
+      //        .collect()
+      //        .foreach(println)
 
     }
   }

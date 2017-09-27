@@ -7,7 +7,7 @@ import org.bdgenomics.utils.interval.array.IntervalArray
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
-sealed abstract class Closest[T: ClassTag, U: ClassTag] extends SetTheoryBetweenCollections[T, U, T, U] {
+sealed abstract class Closest[T: ClassTag, U: ClassTag] {
 
   var currentClosest: ReferenceRegion = ReferenceRegion("", 0, 0)
 
@@ -21,9 +21,9 @@ sealed abstract class Closest[T: ClassTag, U: ClassTag] extends SetTheoryBetween
    * @return True if the threshold requirement is met.
    *         False if the threshold requirement is not met.
    */
-  override protected def condition(firstRegion: ReferenceRegion,
-                                   secondRegion: ReferenceRegion,
-                                   threshold: Long = 0L): Boolean = {
+  protected def condition(firstRegion: ReferenceRegion,
+                          secondRegion: ReferenceRegion,
+                          threshold: Long = 0L): Boolean = {
     firstRegion
       .unstrandedDistance(secondRegion)
       .contains(firstRegion
@@ -47,7 +47,7 @@ class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(Refere
    *         The right RDD, copartitioned with the left.
    *         The original partition map.
    */
-  override protected def prepare(): (RDD[(ReferenceRegion, T)], RDD[(ReferenceRegion, U)], Array[Option[(ReferenceRegion, ReferenceRegion)]]) = {
+  protected def prepare(): (RDD[(ReferenceRegion, T)], RDD[(ReferenceRegion, U)], Array[Option[(ReferenceRegion, ReferenceRegion)]]) = {
 
     val adjustedPartitionMapWithIndex = partitionMap
       // the zipWithIndex gives us the destination partition ID
@@ -142,9 +142,9 @@ class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(Refere
    * @param threshold The distance requirement for closest.
    * @return The first region.
    */
-  override protected def primitive(firstRegion: ReferenceRegion,
-                                   secondRegion: ReferenceRegion,
-                                   threshold: Long = 0L): ReferenceRegion = {
+  protected def primitive(firstRegion: ReferenceRegion,
+                          secondRegion: ReferenceRegion,
+                          threshold: Long = 0L): ReferenceRegion = {
     firstRegion
   }
 
@@ -157,8 +157,8 @@ class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(Refere
    * @return True for regions that should be removed.
    *         False for all regions that should remain in the cache.
    */
-  override protected def pruneCacheCondition(cachedRegion: ReferenceRegion,
-                                             to: ReferenceRegion): Boolean = {
+  protected def pruneCacheCondition(cachedRegion: ReferenceRegion,
+                                    to: ReferenceRegion): Boolean = {
     if (cachedRegion.referenceName != to.referenceName) {
       true
     } else {
@@ -176,8 +176,8 @@ class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(Refere
    * @return True for all regions to be added to the cache.
    *         False for regions that should not be added to the cache.
    */
-  override protected def advanceCacheCondition(candidateRegion: ReferenceRegion,
-                                               until: ReferenceRegion): Boolean = {
+  protected def advanceCacheCondition(candidateRegion: ReferenceRegion,
+                                      until: ReferenceRegion): Boolean = {
     if (candidateRegion.referenceName != until.referenceName) {
       false
     } else if (until.referenceName != currentClosest.referenceName ||
@@ -199,8 +199,8 @@ class SingleClosest[T: ClassTag, U: ClassTag](protected val leftRdd: RDD[(Refere
    * @param cache The cache of potential hits.
    * @return An iterator containing the current left with the closest region.
    */
-  override protected def processHits(current: (ReferenceRegion, T),
-                                     cache: ListBuffer[(ReferenceRegion, U)]): Iterator[(ReferenceRegion, (T, U))] = {
+  protected def processHits(current: (ReferenceRegion, T),
+                            cache: ListBuffer[(ReferenceRegion, U)]): Iterator[(ReferenceRegion, (T, U))] = {
 
     val (currentRegion, currentValue) = current
     cache.filter(f => {

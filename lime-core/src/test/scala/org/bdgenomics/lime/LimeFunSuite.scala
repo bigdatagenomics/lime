@@ -8,7 +8,7 @@ import org.bdgenomics.utils.misc.SparkFunSuite
 class LimeFunSuite extends SparkFunSuite {
   override val appName: String = "Lime"
   override val properties: Map[String, String] = Map(("spark.serializer", "org.apache.spark.serializer.KryoSerializer"),
-    ("spark.kryo.registrator", "org.bdgenomics.adam.serialization.ADAMKryoRegistrator"),
+    ("spark.kryo.registrator", "org.bdgenomics.lime.serialization.LimeKryoRegistrator"),
     ("spark.kryoserializer.buffer", "4M"),
     ("spark.kryo.referenceTracking", "true"))
 

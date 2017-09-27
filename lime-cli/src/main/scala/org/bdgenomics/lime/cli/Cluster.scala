@@ -1,10 +1,9 @@
 package org.bdgenomics.lime.cli
 
 import org.apache.spark.SparkContext
-import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
-import org.bdgenomics.lime.set_theory.UnstrandedCluster
+import org.bdgenomics.lime.set_theory.ShuffleCluster
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 
@@ -34,11 +33,11 @@ object Cluster extends BDGCommandCompanion {
     val companion = Intersection
 
     def run(sc: SparkContext) {
-      val leftGenomicRDD = sc.loadBed(args.input).repartitionAndSort()
-      val leftGenomicRDDKeyed = leftGenomicRDD.rdd.map(f => (ReferenceRegion.stranded(f), f))
+      val leftGenomicRDD = sc.loadBed(args.input)
 
-      UnstrandedCluster(leftGenomicRDDKeyed, leftGenomicRDD.partitionMap.get)
+      ShuffleCluster(leftGenomicRDD)
         .compute()
+        .rdd
         .collect
         .foreach(println)
     }

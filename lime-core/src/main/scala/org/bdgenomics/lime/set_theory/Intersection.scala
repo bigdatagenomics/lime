@@ -1,70 +1,32 @@
 package org.bdgenomics.lime.set_theory
 
-import org.apache.spark.rdd.RDD
 import org.bdgenomics.adam.models.ReferenceRegion
-import scala.collection.mutable.ListBuffer
+import org.bdgenomics.adam.rdd.{ GenericGenomicRDD, GenomicRDD }
+
 import scala.reflect.ClassTag
 
-sealed abstract class Intersection[T: ClassTag, U: ClassTag] extends OverlapBasedSetTheory[T, U, T, U] {
+sealed abstract class Intersection[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]] extends SetTheory[T, X, T, X] {
 
-  /**
-   * The primitive operation for intersection, computes the intersection
-   * of the two regions.
-   *
-   * @param firstRegion The first region to intersect.
-   * @param secondRegion The second region to intersect.
-   * @param minimumOverlap The minimum amount of overlap required to intersect.
-   * @return The intersection of the two regions.
-   */
-  override protected def primitive(firstRegion: ReferenceRegion,
-                                   secondRegion: ReferenceRegion,
-                                   minimumOverlap: Long = 0L): ReferenceRegion = {
-
-    firstRegion.intersection(secondRegion, minimumOverlap)
+  override protected def predicate(joinedTuple: (T, X)): (T, X) = {
+    joinedTuple
   }
 
-  /**
-   * The condition that should be met in order for the two regions to be
-   * intersected.
-   *
-   * @param firstRegion The region to test against.
-   * @param secondRegion The region to test.
-   * @param minimumOverlap The minimum amount of overlap between the two
-   *                       regions.
-   * @return True if the overlap requirement is met.
-   *         False if the overlap requirement is not met.
-   */
-  override protected def condition(firstRegion: ReferenceRegion,
-                                   secondRegion: ReferenceRegion,
-                                   minimumOverlap: Long = 0L): Boolean = {
+  override protected def regionPredicate(regions: ((T, X)) => Seq[ReferenceRegion]): ((T, X)) => Seq[ReferenceRegion] = {
 
-    firstRegion.overlapsBy(secondRegion).exists(_ >= threshold)
+    regions.andThen(f => {
+      if (f.length == 1) {
+        Seq()
+      } else {
+        Seq(f(0).intersection(f(1)))
+      }
+    })
   }
 }
 
-case class DistributedIntersection[T: ClassTag, U: ClassTag](leftRdd: RDD[(ReferenceRegion, T)],
-                                                             rightRdd: RDD[(ReferenceRegion, U)],
-                                                             partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
-                                                             threshold: Long = 0L) extends Intersection[T, U] {
-  /**
-   * Pairs the rows together for each intersected region.
-   *
-   * @see condition
-   * @see primitive
-   * @param current The current left row, keyed by the ReferenceRegion.
-   * @param cache The cache of potential hits.
-   * @return An iterator containing all processed hits.
-   */
-  override protected def processHits(current: (ReferenceRegion, T),
-                                     cache: ListBuffer[(ReferenceRegion, U)]): Iterator[(ReferenceRegion, (T, U))] = {
-
-    val (currentLeftRegion, currentLeftValue) = current
-    cache.filter(f => {
-      val (rightRegion, _) = f
-      condition(currentLeftRegion, rightRegion, threshold)
-    }).map(g => {
-      val (currentRightRegion, currentRightValue) = g
-      (primitive(currentLeftRegion, currentRightRegion), (currentLeftValue, currentRightValue))
-    }).iterator
+case class ShuffleIntersection[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]](leftRdd: GenomicRDD[T, U],
+                                                                                   rightRdd: GenomicRDD[X, Y],
+                                                                                   threshold: Long = 0L) extends Intersection[T, U, X, Y] {
+  override protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicRDD[(T, X)] = {
+    leftRdd.shuffleRegionJoin[X, Y](rightRdd, threshold)
   }
 }
