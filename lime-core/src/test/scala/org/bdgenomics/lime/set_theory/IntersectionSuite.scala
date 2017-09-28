@@ -22,6 +22,7 @@ class IntersectionSuite extends LimeFunSuite {
     val zippedWithCorrectOutput = intersection.rdd.flatMap(f =>
       Seq(ReferenceRegion(f._1.getContigName, f._1.getStart, f._1.getEnd).intersection(
         ReferenceRegion(f._2.getContigName, f._2.getStart, f._2.getEnd)))).collect().sorted.zip(bedtoolsOuput)
+
     assert(!zippedWithCorrectOutput.exists(f => f._1 != f._2))
   }
 }

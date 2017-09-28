@@ -13,7 +13,6 @@ sealed abstract class Merge[T, U <: GenomicRDD[T, U]] extends SingleCollectionSe
   }
 
   override protected def regionPredicate(regions: ((T, Iterable[T])) => Seq[ReferenceRegion]): ((T, Iterable[T])) => Seq[ReferenceRegion] = {
-
     regions.andThen(f => {
       if (f(0) != f(1)) {
         Seq()

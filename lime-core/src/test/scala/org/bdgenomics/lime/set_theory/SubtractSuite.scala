@@ -10,7 +10,6 @@ class SubtractSuite extends LimeFunSuite {
     val rightFile = sc.loadBed(resourcesFile("/intersect_with_overlap_01.bed"))
 
     val subtraction = ShuffleSubtract(leftFile, rightFile).compute()
-
     val regionsSubtracted = subtraction.rdd.map(subtraction.regionFn).collect.flatten.sorted
 
     val bedtoolsOutput = Array(ReferenceRegion("chr1", 28735, 29810),

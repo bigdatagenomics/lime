@@ -50,6 +50,7 @@ object Closest extends BDGCommandCompanion {
       //        .compute()
       //        .collect()
       //        .foreach(println)
+
     }
   }
 }
