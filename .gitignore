@@ -1,0 +1,17 @@
+.idea
+*.iml
+target
+adam*.jar
+build
+*~
+#*
+*.bak
+*.bam*
+*.adam*
+*.log
+.*.swp
+.DS_Store
+*#*
+.Rproj.user
+.Rhistory
+.RData
