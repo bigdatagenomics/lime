@@ -14,7 +14,11 @@
     <packaging>jar</packaging>
     <name>lime-cli: Command line interface for distributed set theory on genomics</name>
     
-    <build>
+  <properties>
+    <timestamp>${maven.build.timestamp}</timestamp>
+    <maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
+  </properties>
+  <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
