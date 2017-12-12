@@ -35,21 +35,30 @@ private class LimeMain(args: Array[String]) extends Logging {
     Closest,
     Window)
 
+  private def printLogo() {
+    print("\n")
+    print("""          _ _
+             |  .;++   | (_)
+             |  ;++#   | |_ ____   ____
+             |  ;++#   | | |    \ / _  )
+             |  +++#   | | | | | ( (/ /
+             |  +##.   |_|_|_|_|_|\____)""".stripMargin('|'))
+  }
+
   private def printVersion() {
-    println("Version 0")
-    // val about = new About()
-    // println("\nLime version: " + about.version())
-    // if (about.isSnapshot) {
-    //   println("Commit: %s Build %s".format(about.commit(), about.buildTimestamp))
-    // }
-    // println("Built for: Scala %s and Hadoop %s".format(about.scalaVersion(), about.hadoopVersion()))
+    printLogo()
+    val about = new About()
+    println("\n\nLime version: " + about.version())
+    if (about.isSnapshot) {
+      println("Commit: %s Build %s".format(about.commit(), about.buildTimestamp))
+    }
+    println()
   }
 
   private def printCommands() {
-    println()
-    println("Usage: lime-submit [<spark-args> --] <lime-args> [-version]")
-    println()
-    println("Choose one of the following commands:")
+    printLogo()
+    println("\n\nUsage: lime-submit [<spark-args> --] <lime-args> [-version]")
+    println("\nChoose one of the following commands:")
     println()
     commands.foreach(cmd => {
       println("%20s : %s".format(cmd.commandName, cmd.commandDescription))
@@ -58,20 +67,28 @@ private class LimeMain(args: Array[String]) extends Logging {
   }
 
   def run() {
-    log.info("Lime invoked with args: " + args.mkString(" "))
-
-    val (versionArgs, nonVersionArgs) = args.partition(_ == "-version")
-    if (versionArgs.nonEmpty) {
+    log.info("Lime invoked with args: %s".format(argsToString(args)))
+    if (args.length < 1) {
+      printCommands()
+    } else if (args.contains("--version") || args.contains("-version")) {
       printVersion()
-    }
+    } else {
 
-    nonVersionArgs.headOption
-      .flatMap(cmdName => {
-        commands.find(_.commandName == cmdName)
-      }).fold({
-        printCommands()
-      })(cmd => {
-        cmd.apply(args.tail).run()
-      })
+      args.headOption
+        .flatMap(cmdName => {
+          commands.find(_.commandName == cmdName)
+        }).fold({
+          printCommands()
+        })(cmd => {
+          cmd.apply(args.tail).run()
+        })
+    }
+  }
+
+  // Attempts to format the `args` array into a string in a way
+  // suitable for copying and pasting back into the shell.
+  private def argsToString(args: Array[String]): String = {
+    def escapeArg(s: String) = "\"" + s.replaceAll("\\\"", "\\\\\"") + "\""
+    args.map(escapeArg).mkString(" ")
   }
 }
