@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bdgenomics.lime.set_statistics
+package org.bdgenomics.lime.statistics
 
 import org.bdgenomics.adam.rdd.GenomicRDD
-import org.bdgenomics.lime.set_theory.{ ShuffleIntersection, ShuffleMerge }
+import org.bdgenomics.lime.op.{ ShuffleIntersection, ShuffleMerge }
 
 import scala.reflect.ClassTag
 

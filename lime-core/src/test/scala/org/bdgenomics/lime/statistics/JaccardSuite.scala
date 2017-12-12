@@ -15,15 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bdgenomics.lime.set_statistics
+package org.bdgenomics.lime.statistics
 
-import scala.reflect.ClassTag
+import org.bdgenomics.adam.rdd.ADAMContext._
+import org.bdgenomics.lime.LimeFunSuite
 
-protected abstract class Statistic[T, X] {
-  def compute()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): StatisticResult
-}
+class JaccardSuite extends LimeFunSuite {
+  sparkTest("test jaccard distance between two regions") {
+    val leftGenomicRDD = sc.loadFeatures(resourcesFile("/intersect_with_overlap_00.bed")).sortLexicographically()
+    val rightGenomicRdd = sc.loadFeatures(resourcesFile("/intersect_with_overlap_01.bed")).sortLexicographically()
 
-protected abstract class StatisticResult {
+    val jaccard_dist = new JaccardDistance(leftGenomicRDD, rightGenomicRdd).compute()
 
-  override def toString(): String
+    assert(JaccardStatistic(9240, 32917, 0.28070601816690466, 3).equals(jaccard_dist))
+  }
 }

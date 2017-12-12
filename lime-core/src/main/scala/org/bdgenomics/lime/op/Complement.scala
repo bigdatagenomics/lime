@@ -15,16 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bdgenomics.lime.set_theory
+package org.bdgenomics.lime.op
 
-import org.bdgenomics.lime.LimeFunSuite
-import org.bdgenomics.adam.rdd.ADAMContext._
+import org.apache.spark.rdd.RDD
+import org.bdgenomics.adam.models.ReferenceRegion
+import scala.reflect.ClassTag
 
-class ClusterSuite extends LimeFunSuite {
-  sparkTest("test local merge when all data merges to a single region") {
-    val genomicRdd = sc.loadBed(resourcesFile("/cpg_20merge.bed"))
-    val x = ShuffleCluster(genomicRdd).compute()
+sealed abstract class Complement[T: ClassTag] {
 
-    assert(x.rdd.count == 1)
-  }
 }
+
+case class DistributedComplement[T: ClassTag](rddToCompute: RDD[(ReferenceRegion, T)],
+                                              partitionMap: Array[Option[(ReferenceRegion, ReferenceRegion)]],
+                                              referenceNameBounds: Map[String, ReferenceRegion],
+                                              threshold: Long = 0L) extends Complement[T]

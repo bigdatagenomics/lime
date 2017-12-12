@@ -15,17 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bdgenomics.lime.set_theory
+package org.bdgenomics.lime.statistics
 
-import org.bdgenomics.adam.rdd.ADAMContext._
-import org.bdgenomics.lime.LimeFunSuite
+import scala.reflect.ClassTag
 
-class MergeSuite extends LimeFunSuite {
-  sparkTest("test local merge when all data merges to a single region") {
-    val genomicRdd = sc.loadBed(resourcesFile("/cpg_20merge.bed"))
-    val x = ShuffleMerge(
-      genomicRdd)
-      .compute()
-    assert(x.rdd.count == 1)
-  }
+protected abstract class Statistic[T, X] {
+  def compute()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): StatisticResult
+}
+
+protected abstract class StatisticResult {
+
+  override def toString(): String
 }

@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bdgenomics.lime.set_theory
+package org.bdgenomics.lime.op
 
 import org.apache.spark.rdd.RDD
 import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.GenericGenomicRDD
 import scala.reflect.ClassTag
 
-private[set_theory] abstract class SetTheory[T, X, RT, RU] extends Serializable {
+private[op] abstract class SetTheory[T, X, RT, RU] extends Serializable {
 
   protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicRDD[(RT, RU)]
 
@@ -40,7 +40,7 @@ private[set_theory] abstract class SetTheory[T, X, RT, RU] extends Serializable 
   }
 }
 
-private[set_theory] abstract class SingleCollectionSetTheory[T, RT] extends Serializable {
+private[op] abstract class SingleCollectionSetTheory[T, RT] extends Serializable {
 
   protected def join()(implicit tTag: ClassTag[T]): GenericGenomicRDD[(T, RT)]
 

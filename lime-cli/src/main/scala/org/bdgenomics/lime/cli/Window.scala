@@ -21,7 +21,7 @@ import org.apache.spark.SparkContext
 import org.bdgenomics.adam.rdd.ADAMContext._
 import org.bdgenomics.adam.rdd.ADAMSaveAnyArgs
 import org.bdgenomics.adam.rdd.feature.FeatureRDD
-import org.bdgenomics.lime.set_theory.ShuffleWindow
+import org.bdgenomics.lime.op.ShuffleWindow
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 
