@@ -23,7 +23,7 @@ import org.bdgenomics.adam.rdd.{ ADAMSaveAnyArgs, GenomicRDD, feature }
 import org.bdgenomics.utils.cli._
 import org.kohsuke.args4j.Argument
 import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.lime.set_statistics.JaccardDistance
+import org.bdgenomics.lime.statistics.JaccardDistance
 
 object Jaccard extends BDGCommandCompanion {
   val commandName = "jaccard"

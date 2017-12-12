@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bdgenomics.lime.set_theory
+package org.bdgenomics.lime.op
 
 import org.bdgenomics.adam.models.ReferenceRegion
 import org.bdgenomics.adam.rdd.{ GenericGenomicRDD, GenomicRDD }
 
 import scala.reflect.ClassTag
 
-sealed private[set_theory] abstract class Window[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]] extends SetTheory[T, X, T, X] {
+sealed private[op] abstract class Window[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]] extends SetTheory[T, X, T, X] {
 
   override protected def predicate(joinedTuple: (T, X)): (T, X) = {
     joinedTuple
