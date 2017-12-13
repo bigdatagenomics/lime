@@ -20,7 +20,11 @@
 # usage: lime-submit [<spark-args> --] <lime-args>
 
 set -e
-DD=False
+
+SOURCE_DIR=$(dirname ${BASH_SOURCE[0]})
+
+# Split args into Spark and Lime args
+DD=False  # DD is "double dash"
 PRE_DD=()
 POST_DD=()
 for ARG in "$@"; do
@@ -41,47 +45,22 @@ else
   LIME_ARGS=("${PRE_DD[@]}")
 fi
 
-# Figure out where LIME is installed
-SCRIPT_DIR="$(cd `dirname $0`/..; pwd)"
-
-# Find LIME cli assembly jar
-LIME_CLI_JAR=
-if [ -d "$SCRIPT_DIR/repo" ]; then
-  ASSEMBLY_DIR="$SCRIPT_DIR/repo"
-else
-  ASSEMBLY_DIR="$SCRIPT_DIR/lime-cli/target"
+# does the user have LIME_OPTS set? if yes, then warn
+if [[ $DD == False && -n "$LIME_OPTS" ]]; then
+    echo "WARNING: Passing Spark arguments via LIME_OPTS was recently removed." 1>&2
+    echo "Run lime-submit instead as lime-submit <spark-args> -- <lime-args>" 1>&2
 fi
 
-num_jars="$(ls -1 "$ASSEMBLY_DIR" | grep "^lime-cli-[0-9A-Za-z\.-]*\.jar$" | grep -v javadoc | wc -l)"
-if [ "$num_jars" -eq "0" ]; then
-  echo "Failed to find LIME cli assembly in $ASSEMBLY_DIR." 1>&2
-  echo "You need to build LIME before running this program." 1>&2
-  exit 1
-fi
+LIME_CLI_JAR=$(${SOURCE_DIR}/find-lime-assembly.sh)
 
-ASSEMBLY_JARS="$(ls -1 "$ASSEMBLY_DIR" | grep "^lime-cli-[0-9A-Za-z\.-]*\.jar$" | grep -v javadoc || true)"
-if [ "$num_jars" -gt "1" ]; then
-  echo "Found multiple LIME cli assembly jars in $ASSEMBLY_DIR:" 1>&2
-  echo "$ASSEMBLY_JARS" 1>&2
-  echo "Please remove all but one jar." 1>&2
-  exit 1
+# Allow main class to be overridden
+if [ -z "$LIME_MAIN" ]; then
+  LIME_MAIN="org.bdgenomics.lime.cli.LimeMain"
 fi
+echo "Using LIME_MAIN=$LIME_MAIN" 1>&2
 
-LIME_CLI_JAR="${ASSEMBLY_DIR}/${ASSEMBLY_JARS}"
-LIME_MAIN="org.bdgenomics.lime.cli.LimeMain"
-
-# Find spark-submit script
-if [ -z "$SPARK_HOME" ]; then
-  SPARK_SUBMIT=$(which spark-submit || echo)
-else
-  SPARK_SUBMIT="$SPARK_HOME"/bin/spark-submit
-fi
-
-if [ -z "$SPARK_SUBMIT" ]; then
-  echo "SPARK_HOME not set and spark-submit not on PATH; Aborting."
-  exit 1
-fi
-echo "Using SPARK_SUBMIT=$SPARK_SUBMIT"
+SPARK_SUBMIT=$(${SOURCE_DIR}/find-spark.sh)
+echo "Using spark-submit=$SPARK_SUBMIT" 1>&2
 
 # submit the job to Spark
 "$SPARK_SUBMIT" \

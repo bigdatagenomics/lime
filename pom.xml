@@ -27,6 +27,7 @@
   <modules>
     <module>lime-core</module>
     <module>lime-cli</module>
+    <module>lime-assembly</module>
   </modules>
 
   <licenses>
@@ -365,6 +366,7 @@
       <modules>
         <module>lime-core</module>
         <module>lime-cli</module>
+        <module>lime-assembly</module>
         <!-- distribution should be last -->
         <module>lime-distribution</module>
       </modules>
