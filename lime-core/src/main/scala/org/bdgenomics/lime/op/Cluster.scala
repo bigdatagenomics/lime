@@ -18,11 +18,11 @@
 package org.bdgenomics.lime.op
 
 import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.{ GenomicRDD, GenericGenomicRDD }
+import org.bdgenomics.adam.rdd.{ GenomicDataset, GenericGenomicDataset }
 
 import scala.reflect.ClassTag
 
-sealed abstract class Cluster[T, U <: GenomicRDD[T, U]] extends SingleCollectionSetTheory[T, Iterable[T]] {
+sealed abstract class Cluster[T, U <: GenomicDataset[T, U]] extends SingleCollectionSetTheory[T, Iterable[T]] {
 
   override protected def predicate(joinedTuple: (T, Iterable[T])): (T, Iterable[T]) = joinedTuple
 
@@ -41,10 +41,10 @@ sealed abstract class Cluster[T, U <: GenomicRDD[T, U]] extends SingleCollection
   }
 }
 
-case class ShuffleCluster[T, U <: GenomicRDD[T, U]](genomicRdd: GenomicRDD[T, U],
-                                                    threshold: Long = 0L) extends Cluster[T, U] {
+case class ShuffleCluster[T, U <: GenomicDataset[T, U]](genomicRdd: GenomicDataset[T, U],
+                                                        threshold: Long = 0L) extends Cluster[T, U] {
 
-  override protected def join()(implicit tTag: ClassTag[T]): GenericGenomicRDD[(T, Iterable[T])] = {
+  override protected def join()(implicit tTag: ClassTag[T]): GenericGenomicDataset[(T, Iterable[T])] = {
     genomicRdd.shuffleRegionJoinAndGroupByLeft(genomicRdd, threshold)
   }
 }

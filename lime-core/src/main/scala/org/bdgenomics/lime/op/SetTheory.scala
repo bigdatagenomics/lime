@@ -19,21 +19,21 @@ package org.bdgenomics.lime.op
 
 import org.apache.spark.rdd.RDD
 import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.GenericGenomicRDD
+import org.bdgenomics.adam.rdd.GenericGenomicDataset
 import scala.reflect.ClassTag
 
 private[op] abstract class SetTheory[T, X, RT, RU] extends Serializable {
 
-  protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicRDD[(RT, RU)]
+  protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicDataset[(RT, RU)]
 
   protected def predicate(joinedTuple: (RT, RU)): (RT, RU)
 
   protected def regionPredicate(regions: ((RT, RU)) => Seq[ReferenceRegion]): ((RT, RU)) => Seq[ReferenceRegion]
 
-  def compute()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicRDD[(RT, RU)] = {
+  def compute()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicDataset[(RT, RU)] = {
     val genomicRDD = join().transform(f => f.map(predicate))
 
-    GenericGenomicRDD(genomicRDD.rdd,
+    GenericGenomicDataset(genomicRDD.rdd,
       genomicRDD.sequences,
       regionPredicate(genomicRDD.regionFn),
       genomicRDD.optPartitionMap)
@@ -42,7 +42,7 @@ private[op] abstract class SetTheory[T, X, RT, RU] extends Serializable {
 
 private[op] abstract class SingleCollectionSetTheory[T, RT] extends Serializable {
 
-  protected def join()(implicit tTag: ClassTag[T]): GenericGenomicRDD[(T, RT)]
+  protected def join()(implicit tTag: ClassTag[T]): GenericGenomicDataset[(T, RT)]
 
   protected def predicate(joinedTuple: (T, RT)): (T, RT)
 
@@ -50,7 +50,7 @@ private[op] abstract class SingleCollectionSetTheory[T, RT] extends Serializable
 
   protected def regionPredicate(regions: ((T, RT)) => Seq[ReferenceRegion]): ((T, RT)) => Seq[ReferenceRegion]
 
-  def compute()(implicit tTag: ClassTag[T]): GenericGenomicRDD[(T, RT)] = {
+  def compute()(implicit tTag: ClassTag[T]): GenericGenomicDataset[(T, RT)] = {
     val genomicRDD = join().transform(f => f.map(predicate))
 
     genomicRDD.rdd.cache
@@ -95,7 +95,7 @@ private[op] abstract class SingleCollectionSetTheory[T, RT] extends Serializable
         .values
     }
 
-    GenericGenomicRDD(
+    GenericGenomicDataset(
       x,
       genomicRDD.sequences,
       regionPredicate(genomicRDD.regionFn),

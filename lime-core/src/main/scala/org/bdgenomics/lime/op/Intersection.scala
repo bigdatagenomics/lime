@@ -18,11 +18,11 @@
 package org.bdgenomics.lime.op
 
 import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.{ GenericGenomicRDD, GenomicRDD }
+import org.bdgenomics.adam.rdd.{ GenericGenomicDataset, GenomicDataset }
 
 import scala.reflect.ClassTag
 
-sealed abstract class Intersection[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]] extends SetTheory[T, X, T, X] {
+sealed abstract class Intersection[T, U <: GenomicDataset[T, U], X, Y <: GenomicDataset[X, Y]] extends SetTheory[T, X, T, X] {
 
   override protected def predicate(joinedTuple: (T, X)): (T, X) = {
     joinedTuple
@@ -40,10 +40,12 @@ sealed abstract class Intersection[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[
   }
 }
 
-case class ShuffleIntersection[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]](leftRdd: GenomicRDD[T, U],
-                                                                                   rightRdd: GenomicRDD[X, Y],
-                                                                                   threshold: Long = 0L) extends Intersection[T, U, X, Y] {
-  override protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicRDD[(T, X)] = {
+case class ShuffleIntersection[T, U <: GenomicDataset[T, U], X, Y <: GenomicDataset[X, Y]](
+    leftRdd: GenomicDataset[T, U],
+    rightRdd: GenomicDataset[X, Y],
+    threshold: Long = 0L) extends Intersection[T, U, X, Y] {
+
+  override protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicDataset[(T, X)] = {
     leftRdd.shuffleRegionJoin[X, Y](rightRdd, threshold)
   }
 }

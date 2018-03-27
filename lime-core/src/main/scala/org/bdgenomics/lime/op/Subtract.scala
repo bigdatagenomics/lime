@@ -18,11 +18,11 @@
 package org.bdgenomics.lime.op
 
 import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.{ GenericGenomicRDD, GenomicRDD }
+import org.bdgenomics.adam.rdd.{ GenericGenomicDataset, GenomicDataset }
 
 import scala.reflect.ClassTag
 
-sealed abstract class Subtract[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]] extends SetTheory[T, X, T, Iterable[X]] {
+sealed abstract class Subtract[T, U <: GenomicDataset[T, U], X, Y <: GenomicDataset[X, Y]] extends SetTheory[T, X, T, Iterable[X]] {
   override protected def predicate(joinedTuple: (T, Iterable[X])): (T, Iterable[X]) = {
     joinedTuple
   }
@@ -45,11 +45,12 @@ sealed abstract class Subtract[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y
   }
 }
 
-case class ShuffleSubtract[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]](leftRdd: GenomicRDD[T, U],
-                                                                               rightRdd: GenomicRDD[X, Y],
-                                                                               threshold: Long = 0L) extends Subtract[T, U, X, Y] {
+case class ShuffleSubtract[T, U <: GenomicDataset[T, U], X, Y <: GenomicDataset[X, Y]](
+    leftRdd: GenomicDataset[T, U],
+    rightRdd: GenomicDataset[X, Y],
+    threshold: Long = 0L) extends Subtract[T, U, X, Y] {
 
-  override protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicRDD[(T, Iterable[X])] = {
+  override protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicDataset[(T, Iterable[X])] = {
     leftRdd.leftOuterShuffleRegionJoinAndGroupByLeft[X, Y](rightRdd, threshold)
   }
 }
