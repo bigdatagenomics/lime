@@ -17,13 +17,14 @@
  */
 package org.bdgenomics.lime.statistics
 
-import org.bdgenomics.adam.rdd.GenomicRDD
+import org.bdgenomics.adam.rdd.GenomicDataset
 import org.bdgenomics.lime.op.{ ShuffleIntersection, ShuffleMerge }
 
 import scala.reflect.ClassTag
 
-class JaccardDistance[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]](leftRdd: GenomicRDD[T, U],
-                                                                          rightRdd: GenomicRDD[X, Y]) extends Statistic[T, X] {
+class JaccardDistance[T, U <: GenomicDataset[T, U], X, Y <: GenomicDataset[X, Y]](
+    leftRdd: GenomicDataset[T, U],
+    rightRdd: GenomicDataset[X, Y]) extends Statistic[T, X] {
 
   def compute()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): StatisticResult = {
 

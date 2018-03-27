@@ -18,11 +18,11 @@
 package org.bdgenomics.lime.op
 
 import org.bdgenomics.adam.models.ReferenceRegion
-import org.bdgenomics.adam.rdd.{ GenericGenomicRDD, GenomicRDD }
+import org.bdgenomics.adam.rdd.{ GenericGenomicDataset, GenomicDataset }
 
 import scala.reflect.ClassTag
 
-sealed private[op] abstract class Window[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]] extends SetTheory[T, X, T, X] {
+sealed private[op] abstract class Window[T, U <: GenomicDataset[T, U], X, Y <: GenomicDataset[X, Y]] extends SetTheory[T, X, T, X] {
 
   override protected def predicate(joinedTuple: (T, X)): (T, X) = {
     joinedTuple
@@ -31,11 +31,12 @@ sealed private[op] abstract class Window[T, U <: GenomicRDD[T, U], X, Y <: Genom
   override protected def regionPredicate(regions: ((T, X)) => Seq[ReferenceRegion]): ((T, X)) => Seq[ReferenceRegion] = regions
 }
 
-case class ShuffleWindow[T, U <: GenomicRDD[T, U], X, Y <: GenomicRDD[X, Y]](leftRdd: GenomicRDD[T, U],
-                                                                             rightRdd: GenomicRDD[X, Y],
-                                                                             threshold: Long = 1000L) extends Window[T, U, X, Y] {
+case class ShuffleWindow[T, U <: GenomicDataset[T, U], X, Y <: GenomicDataset[X, Y]](
+    leftRdd: GenomicDataset[T, U],
+    rightRdd: GenomicDataset[X, Y],
+    threshold: Long = 1000L) extends Window[T, U, X, Y] {
 
-  override protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicRDD[(T, X)] = {
+  override protected def join()(implicit tTag: ClassTag[T], xTag: ClassTag[X]): GenericGenomicDataset[(T, X)] = {
     leftRdd.shuffleRegionJoin[X, Y](rightRdd, threshold)
   }
 }
